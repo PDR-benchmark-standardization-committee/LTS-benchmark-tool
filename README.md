@@ -60,7 +60,7 @@ seaborn==0.10.1
 ## Usage
 ### Step.1 Install
 ```
-git clone  LTS-benchmark-tool
+git clone https://github.com/PDR-benchmark-standardization-committee/LTS-benchmark-tool
 cd  LTS-benchmark-tool
 pip install -r requirements.txt
 ```
