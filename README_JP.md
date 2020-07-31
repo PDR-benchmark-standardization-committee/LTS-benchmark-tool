@@ -194,7 +194,7 @@ python main.py demo_estimation demo_ground_truth --velocity 1.8
 ```
 
 CAの計算でのカーネル密度推定のバンド幅を指定することができます。  
-バンド幅の指定がない場合は、scikit-learnのデフォルトのバンド幅が用いられます。  
+バンド幅の指定がない場合は、sciのデフォルトのバンド幅が用いられます。  
 ```
 python main.py demo_estimation demo_ground_truth --band_width 1.4
 ```
