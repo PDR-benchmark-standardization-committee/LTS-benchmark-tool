@@ -117,7 +117,7 @@ So you don't need edit configuration file, just go forward next step.
 
 ### Step.4 Evaluation
 
-Estimation folder path is required for command line argument.
+Estimation and gorund truth folder path are required for command line argument.
 ```
 python main.py [estimation_path] [ground_truth_path]
 ```
