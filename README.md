@@ -112,8 +112,8 @@ bup_info_fname = 'PDR_Bup_info_No{}.csv'
 [VDR]
 ; Please write folder and file name for evaluation as [PDR]
 ```
-Demo groud truth configuration file is already prepared, so you don't need edit configuration file,  
-just keep next step.
+If you want to evaluate demo estimation files, demo groud truth configuration file is already prepared.   
+So you don't need edit configuration file, just go forward next step.
 
 ### Step.4 Evaluation
 
