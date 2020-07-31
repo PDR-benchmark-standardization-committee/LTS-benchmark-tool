@@ -200,7 +200,7 @@ python main.py demo_estimation demo_ground_truth --band_width 1.4
 ```
 
 CAの計算を二次元ヒストグラムで行うように切り替えることが可能となっています。  
-引数なしの場合は、sicit-learnのデフォルトパラメータのカーネル密度推定によってCAが計算されます  
+引数なしの場合は、scipyのデフォルトパラメータのカーネル密度推定によってCAが計算されます  
 ```
 python main.py demo_estimation demo_ground_truth --CA_hist
 ```
