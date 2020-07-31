@@ -178,7 +178,7 @@ python main.py demo_estimation demo_ground_truth --velocity 1.8
 ```
 
 You can select band width to calculate CA by Kernel Density Estimation.  
-If you do not select band_width, scipy default band widht is used.  
+If you do not select band_width, scipy default band width is used.  
 ```
 python main.py demo_estimation demo_ground_truth --band_width 1.4
 ```
