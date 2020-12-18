@@ -44,26 +44,33 @@ class CalcIndicator(object):
 
         # Calculate euclidean distance
         def Calc_CE(row):
+            sec_limit = 1 #match time limit(sec)
             try:
                 diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
                 min_index = diff_abs.argmin()
-                error_m_value = math.hypot(row['x_position_m'] - tra_data['x_position_m'][min_index], 
-                                        row['y_position_m'] - tra_data['y_position_m'][min_index])
+
+                error_m_value = []
+
+                if diff_abs[min_index] <= sec_limit:
+                    error_m_value = math.hypot(row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index])
+                else: #no match
+                    error_m_value = -1
+
                 return error_m_value
             
             except ValueError:
                 return 'error'
-        
+
         CE_list = eval_point_outof_bup.apply(Calc_CE, axis=1).values
         CE_list = [num for num in CE_list if num != 'error']
-        CE_list.sort() 
+        CE_list.sort()
         
         logger.debug('CE:{}'.format(CE_list))
         logger.debug('Calculate Circular Error(CE) END')
         
         return CE_list
 
-    def EAG_calculation(self, tra_data, ref_point, eval_point_between_bup):
+    def EAG_calculation(self, tra_data, ref_point, eval_point_between_bup, save_filename):
         '''
         Calculate Error Accumulation Gradient (EAG)
 
@@ -90,12 +97,20 @@ class CalcIndicator(object):
             delta_t_min = min(delta_t_list)
             return delta_t_min
 
-        ans_point_delta_t = eval_point_between_bup['unixtime'].apply(lambda x : unixtime_delta_min(x)) 
+        ans_point_delta_t = eval_point_between_bup['unixtime'].apply(lambda x : unixtime_delta_min(x))
         def Calc_EAG(row):
+            sec_limit = 1 #match time limit(sec)
             try:
                 diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
                 min_index = diff_abs.argmin()
-                error_m_s_value = math.hypot(row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index]) / row['delta_t']
+
+                error_m_s_value = []
+                
+                if diff_abs[min_index] <= sec_limit:
+                    error_m_s_value = math.hypot(row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index]) / row['delta_t']
+                else: #no match
+                    error_m_s_value = -1
+                
                 return error_m_s_value
             
             except ValueError:
@@ -219,9 +234,8 @@ class CalcIndicator(object):
             return result
     
         error_xy_series = calc_error_dist(tra_data, ans_point)
-
+        
         def calc_kernel_density_mod(x, y, bw_method=None):
-
             fig = plt.figure()
             sns.set_style('whitegrid')
             plt.rcParams['font.size'] = 12
@@ -233,7 +247,6 @@ class CalcIndicator(object):
             except:
                 logger.debug('Unable to calculate inverse matrix, return mean value')
                 return np.mean(x), np.mean(y), fig
-
             row_idx = np.argmax(zi) // len(xi)
             col_idx = np.argmax(zi) % len(yi)
             x_mod = xi[:, 0][row_idx].round(2)
@@ -247,19 +260,19 @@ class CalcIndicator(object):
             plt.ylabel('Y error')
 
             plt.close()
-
+            
             return x_mod, y_mod, fig
-
+        
         x_mod, y_mod, fig = calc_kernel_density_mod(error_xy_series['x_error'].to_list(), 
                                                     error_xy_series['y_error'].to_list(), 
                                                     bw_method=band_width)
-
+        
         logger.debug('x mod: {}, y mod: {}'.format(x_mod, y_mod))
-
+        
         CA = math.hypot(x_mod, y_mod)
         
         logger.debug('CA: {}'.format(CA))
-
+        
         return CA, fig
 
     def Area_weighted_CA_calculation(self, tra_data, evaluation_point, area_info, 
@@ -301,7 +314,7 @@ class CalcIndicator(object):
                     CA, CA_fig = self.CA_2Dhistgram_calculation(tra_data, area_eval_point)
                 else:
                     CA, CA_fig = self.CA_KernelDensity_calculation(tra_data, area_eval_point, band_width=band_width)
-                
+
             CA_list.append(CA)
             area_list.append(area_num+1)
             fig_list.append(CA_fig)

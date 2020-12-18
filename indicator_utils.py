@@ -52,16 +52,22 @@ def draw_cumulative_sum(data, indicator_name):
     indicator_name : str
     '''
 
-    freq, _ = np.histogram(data, bins=100)
-    relative_freq = freq / len(data)
-    cumsum_relative_freq = np.cumsum(relative_freq)
+    eCDF_plus = 100 / len(data)
+    eCDF = [eCDF_plus]
+    for i in range(len(data)-1):
+        eCDF.append(eCDF[i] + eCDF_plus)
+
+    data.sort()
 
     fig = plt.figure()
     sns.set_style('whitegrid')
-    plt.plot(cumsum_relative_freq)
-    plt.title(f'{indicator_name} cumulative relative frequency')
-    plt.xlabel(f'{indicator_name}')
-    plt.ylabel('cumulative sum')
+    plt.plot(data, eCDF)
+    plt.title(f'{indicator_name}')
+    if indicator_name is 'CE':
+        plt.xlabel(f'{indicator_name} [m]')
+    elif indicator_name is 'EAG':
+        plt.xlabel(f'{indicator_name} [m/s]')
+    plt.ylabel('eCDF')
 
     plt.close()
 
@@ -102,6 +108,12 @@ def save_figure(figure, save_dir, save_filename):
     figure.savefig(fig_save_path)
     logger.debug('save figure at {}'.format(fig_save_path))
 
+def save_total_indicator(data, indicator_name, save_dir, save_filename):
+    save_path = os.path.join(save_dir, save_filename)
+    save_df = pd.DataFrame({indicator_name : data})
+    save_df.to_csv(save_path, index=False)
+    logger.debug('save at {}'.format(save_path))
+
 def save_dataframe(save_dir, save_filename, df):
     save_path = os.path.join(save_dir, save_filename)
     df.to_csv(save_path, index=False)
@@ -119,7 +131,7 @@ def filter_area_point(evaluation_point, area_info, area_num):
     area_num: int
         target area number
     '''
-
+    
     logger.debug('Get area {} evaluation point START'.format(area_num))
 
     target_area_info = area_info[area_info['area']==area_num] 
