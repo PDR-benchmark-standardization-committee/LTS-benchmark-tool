@@ -43,6 +43,8 @@ class CalcIndicator(object):
         logger.debug('Calculate Circular Error (CE) START')
 
         # Calculate euclidean distance
+        unixtime_list = []##debug data
+        correspond_time_list = []##debug data
         def Calc_CE(row):
             sec_limit = 1 #match time limit(sec)
             try:
@@ -56,6 +58,8 @@ class CalcIndicator(object):
                 else: #no match
                     error_m_value = -1
 
+                unixtime_list.append(row['unixtime'])##debug data
+                correspond_time_list.append(diff_abs[min_index])##debug data
                 return error_m_value
             
             except ValueError:
@@ -63,14 +67,15 @@ class CalcIndicator(object):
 
         CE_list = eval_point_outof_bup.apply(Calc_CE, axis=1).values
         CE_list = [num for num in CE_list if num != 'error']
-        CE_list.sort()
+        #CE_list.sort()
         
         logger.debug('CE:{}'.format(CE_list))
         logger.debug('Calculate Circular Error(CE) END')
         
-        return CE_list
+        data = pd.DataFrame({'unixtime' : unixtime_list, 'CE' : CE_list, 'correspond_time' : correspond_time_list})#debug data
+        return data
 
-    def EAG_calculation(self, tra_data, ref_point, eval_point_between_bup, save_filename):
+    def EAG_calculation(self, tra_data, ref_point, eval_point_between_bup):
         '''
         Calculate Error Accumulation Gradient (EAG)
 
@@ -98,6 +103,9 @@ class CalcIndicator(object):
             return delta_t_min
 
         ans_point_delta_t = eval_point_between_bup['unixtime'].apply(lambda x : unixtime_delta_min(x))
+        unixtime_list = []##debug data
+        delta_t_list = []##debug data
+        correspond_time_list = []##debug data
         def Calc_EAG(row):
             sec_limit = 1 #match time limit(sec)
             try:
@@ -111,6 +119,9 @@ class CalcIndicator(object):
                 else: #no match
                     error_m_s_value = -1
                 
+                unixtime_list.append(row['unixtime'])##debug data
+                delta_t_list.append(row['delta_t'])##debug data
+                correspond_time_list.append(diff_abs[min_index])##debug data
                 return error_m_s_value
             
             except ValueError:
@@ -123,12 +134,14 @@ class CalcIndicator(object):
 
         EAG_list = eval_point_between_bup.apply(Calc_EAG, axis=1).values              
         EAG_list = [num for num in EAG_list if num != 'error']
-        EAG_list.sort() 
+        #EAG_list.sort() 
         
         logger.debug('EAG:{}'.format(EAG_list))
         logger.debug('Calculate Error Accumulation Gradient (EAG) END')
+
         
-        return EAG_list
+        data = pd.DataFrame({'unixtime' : unixtime_list, 'EAG' : EAG_list, 'delta_t' : delta_t_list, 'correspond_time' : correspond_time_list})#debug data
+        return data
 
     def CA_2Dhistgram_calculation(self, tra_data, ans_point):
         '''
@@ -607,4 +620,3 @@ class CalcIndicator(object):
         logger.debug('Calculate requirement for obstacle avoidance END')
 
         return obstacle_check
-        

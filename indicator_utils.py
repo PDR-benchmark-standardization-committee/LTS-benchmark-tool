@@ -41,7 +41,21 @@ def save_indicator(data, indicator_name, save_dir, save_filename):
     save_df = pd.DataFrame({indicator_name : data})
     save_df.to_csv(indicator_save_path, index=False)
     logger.debug('save {} at {}'.format(indicator_name, indicator_save_path))
+
+def save_indicator_debug(data, save_dir, save_filename):
+    '''
+    save CE, EAG as csv
+
+    Paramters
+    ---------
+    data : list of float
+    save_filename : str
+    '''
     
+    indicator_save_path = os.path.join(save_dir, save_filename)
+
+    data.to_csv(indicator_save_path, index=False)
+
 def draw_cumulative_sum(data, indicator_name):
     '''
     draw cumulative sum of EAG and CE
@@ -181,3 +195,26 @@ def get_CA_area_weights(evaluation_point, area_info):
     logger.debug('calculate EDD area weights END, weight: {}'.format(weights))
     
     return weights
+
+def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, ble_info):
+    '''
+    draw trajectory on maps
+
+    Parameters
+    ----------
+    tra_data : list of float
+    map_image : bitmap
+    map_size : float
+    '''
+
+    fig = plt.figure(dpi=600)
+    plt.imshow(map_image, extent=[0, map_size[0], 0, map_size[1]])
+    plt.plot(tra_data['x_position_m'], tra_data['y_position_m'], color='red', lw=0.2, label='Trajectory')
+    plt.plot(ref_point['x_position_m'], ref_point['y_position_m'], color='yellow', linestyle='None', marker='+', markersize='0.3', label='Reference')
+    plt.plot(ble_info['x_position_m'], ble_info['y_position_m'], color='orange', linestyle='None', marker='.', markersize='0.5', label='BLE')
+    plt.title(f'{indicator_name}')
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
+    plt.legend(fontsize='small')
+    
+    return fig
