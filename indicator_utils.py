@@ -22,8 +22,10 @@ class IndicatorHolder(object):
         self.file_indicator = pd.DataFrame(self.indicator_values)
         return self.file_indicator
 
-    def calc_total_indicator(self):    
+    def calc_total_indicator(self, CE_total, EAG_total):
         total_indicator = pd.DataFrame(self.file_indicator.mean()).T
+        total_indicator['CE50'] = np.median(CE_total)
+        total_indicator['EAG50'] = np.median(EAG_total)
         return total_indicator
 
 def save_indicator(data, indicator_name, save_dir, save_filename):
