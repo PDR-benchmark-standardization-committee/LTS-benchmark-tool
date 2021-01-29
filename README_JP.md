@@ -4,7 +4,7 @@
 </div>
 
 # LTS-benchmark-tool
-屋内測位業務に関わる人を対象とした、xDR-based LTS (Localization and Tracking)での測位結果の評価指標と必要条件を計算するツール。  
+屋内測位業務に関わる人を対象とした、xDR-based LTS (Localization and Tracking Systems)での測位結果の評価指標と必要条件を計算するツール。  
 指標はxDR-based LTSの汎用的な評価のために用いられる値で      
 必要条件は推定軌跡が現実の人間の挙動に即した軌跡となっているかを評価した値となります。  
 本ツールは、ご自身の推定ファイルと正解値データがなくても、デモ用の推定軌跡ファイルと正解値ファイルを用いて、  
