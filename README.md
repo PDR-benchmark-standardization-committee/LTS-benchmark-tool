@@ -4,7 +4,7 @@
 
 #  LTS-benchmark-tool
 [日本語版(Japanese) README](README_JP.md)  
-People who are involved in indoor positioning technology can calculate their estimation's indicator and requirement for xDR-based LTS.  
+People who are involved in indoor positioning technology can calculate their estimation's indicator and requirement for xDR-based LTS (Localization and Tracking).  
 Indicator means evaluation value that is generally used for xDR-based LTS and requirement means validity that thajection is natural for real human behavior.  
 You can calculate indicator and requiremet for demo estimation file and see how evaluation tool work.  
 This evaluation tool has functions for saving indicator and requirement as csv and draw the histgrams and error deviation.  
