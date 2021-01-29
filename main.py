@@ -93,7 +93,7 @@ def main(args):
                 CE_savedir = os.path.join(indicator_savedir, 'CE')
                 utils.create_dir(CE_savedir) 
 
-                indicator_utils.save_indicator(data=CE, indicator_name='CE', save_dir=CE_savedir, save_filename=f'Traj_No{tra_num}_CE.csv')
+                indicator_utils.save_indicator(data=CE, save_dir=CE_savedir, save_filename=f'Traj_No{tra_num}_CE.csv')
                 CE_hist = indicator_utils.draw_histgram(data=CE, indicator_name='CE', percentile=args.CE_percentile)
                 indicator_utils.save_figure(CE_hist, save_dir=CE_savedir, save_filename=f'Traj_No{tra_num}_CE_histgram.png')
             
@@ -141,7 +141,7 @@ def main(args):
                 EAG_savedir = os.path.join(indicator_savedir, 'EAG')
                 utils.create_dir(EAG_savedir) 
                 
-                indicator_utils.save_indicator(data=EAG, indicator_name='EAG', save_dir=EAG_savedir, save_filename=f'Traj_No{tra_num}_EAG.csv')
+                indicator_utils.save_indicator(data=EAG, save_dir=EAG_savedir, save_filename=f'Traj_No{tra_num}_EAG.csv')
                 EAG_hist = indicator_utils.draw_histgram(data=EAG, indicator_name='EAG', percentile=args.EAG_percentile)
                 indicator_utils.save_figure(EAG_hist, save_dir=EAG_savedir, save_filename=f'Traj_No{tra_num}_EAG_histgram.png')
 

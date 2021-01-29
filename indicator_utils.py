@@ -28,7 +28,7 @@ class IndicatorHolder(object):
         total_indicator['EAG50'] = np.median(EAG_total)
         return total_indicator
 
-def save_indicator(data, indicator_name, save_dir, save_filename):
+def save_indicator(data, save_dir, save_filename):
     '''
     save CE, EAG as csv
 
@@ -39,23 +39,6 @@ def save_indicator(data, indicator_name, save_dir, save_filename):
     '''
     
     indicator_save_path = os.path.join(save_dir, save_filename)
-
-    save_df = pd.DataFrame({indicator_name : data})
-    save_df.to_csv(indicator_save_path, index=False)
-    logger.debug('save {} at {}'.format(indicator_name, indicator_save_path))
-
-def save_indicator_debug(data, save_dir, save_filename):
-    '''
-    save CE, EAG as csv
-
-    Paramters
-    ---------
-    data : list of float
-    save_filename : str
-    '''
-    
-    indicator_save_path = os.path.join(save_dir, save_filename)
-
     data.to_csv(indicator_save_path, index=False)
 
 def draw_cumulative_sum(data, indicator_name):
