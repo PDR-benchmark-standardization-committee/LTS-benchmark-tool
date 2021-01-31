@@ -12,7 +12,7 @@ from logging import getLogger
 logger = getLogger("__main__").getChild("dataloader")
 
 
-def config(track, config_file='config.ini'):
+def config(track, base_dname, config_file='config.ini'):
     '''
     Load ground_truth directory ini file
 
@@ -42,13 +42,11 @@ def config(track, config_file='config.ini'):
                 'file_name':['map_image_fname', 'map_size_fname', 'area_fname', 
                             'ref_fname', 'ans_fname', 'bup_info_fname']}
 
-    ground_truth_dname = config_ini['ANSWER']['ground_truth_dname'].strip("'")
-    
     for key, values in ini_names.items():
         for v in values:
             item = config_ini[track][v].strip("'")
             if key == 'dir_name':
-                item = os.path.join(ground_truth_dname, item)
+                item = os.path.join(base_dname, item)
             
             conf[v] = item
             logger.debug('{}: {}'.format(v, item))
@@ -248,13 +246,11 @@ def drop_ans_duplicated_with_ref(ans_point, ref_point):
 
     ans_point = ans_point.drop_duplicates()
     ref_point = ref_point.drop_duplicates()
-    df_concat = pd.concat([ans_point, ref_point], axis=0)
 
-    # Duplicated row is True
-    is_duplicated = (df_concat.duplicated(keep=False)) 
-    ans_ref_nonduplicated = df_concat[[not(i) for i in is_duplicated]]
+    ref_unixtime = ref_point['unixtime']
+    ans_duplicated_ref = ans_point[~ans_point['unixtime'].isin(ref_unixtime)]
 
-    return ans_ref_nonduplicated
+    return ans_duplicated_ref
 
 def filter_evaluation_data_between_bup(evaluation_point, bup_info, bup_flag):
     '''

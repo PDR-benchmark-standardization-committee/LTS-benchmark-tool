@@ -139,7 +139,6 @@ class CalcIndicator(object):
         logger.debug('EAG:{}'.format(EAG_list))
         logger.debug('Calculate Error Accumulation Gradient (EAG) END')
 
-        
         data = pd.DataFrame({'unixtime' : unixtime_list, 'EAG' : EAG_list, 'delta_t' : delta_t_list, 'correspond_time' : correspond_time_list})#debug data
         return data
 

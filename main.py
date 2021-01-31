@@ -19,7 +19,7 @@ def main(args):
         
         # Load data config 
         data_config_path = glob.glob(os.path.join(args.ground_truth_folder, '*.ini'))[0]
-        conf = dataloader.config(track, config_file=data_config_path)
+        conf = dataloader.config(track, args.ground_truth_folder, config_file=data_config_path)
 
         # Directory path to evaluate
         tra_dname = os.path.join(args.trajection_folder, track)
@@ -71,10 +71,13 @@ def main(args):
             indicator_holder.add_indicator('file_name', tra_filename)
             
             # prepare evaluation point
+            print(len(ref_point))
+            print(len(ans_point))
             if ref_point is None:
                 evaluation_point = ans_point
             else:
                 evaluation_point = dataloader.drop_ans_duplicated_with_ref(ans_point, ref_point)
+            print(len(evaluation_point))
 
             if bup_info is None:
                 eval_point_outof_bup = ans_point
@@ -87,8 +90,9 @@ def main(args):
             if 'CE' in args.indicators:
                 CE = evaluation_indicator.CE_calculation(tra_data, eval_point_outof_bup)
                 CE_percentile = indicator_utils.calc_percentile(CE, args.CE_percentile)
-                indicator_holder.add_indicator(f'CE{args.CE_percentile}', CE_percentile)
-                CE_total.extend(CE)
+                indicator_holder.add_indicator(f'CE{args.CE_percentile}', CE)
+
+                CE_total.extend(CE['CE'])
 
                 CE_savedir = os.path.join(indicator_savedir, 'CE')
                 utils.create_dir(CE_savedir) 
@@ -132,11 +136,11 @@ def main(args):
             # EAG
             if 'EAG' in args.indicators:
                 EAG = evaluation_indicator.EAG_calculation(tra_data, ref_point, eval_point_between_bup) 
-                if EAG == []:
-                    EAG = [-1]
+                if EAG.empty:
+                    EAG = pd.DataFrame([-1])
                 EAG_percentile = indicator_utils.calc_percentile(EAG, args.EAG_percentile)
                 indicator_holder.add_indicator(f'EAG{args.EAG_percentile}', EAG_percentile)
-                EAG_total.extend(EAG)
+                EAG_total.extend(EAG['EAG'])
 
                 EAG_savedir = os.path.join(indicator_savedir, 'EAG')
                 utils.create_dir(EAG_savedir) 
@@ -174,7 +178,7 @@ def main(args):
         utils.save_csv(save_file=file_indicator_summary, save_dir=indicator_savedir, save_filename='file_indicator.csv')
 
         # Show total results
-        total_indicator = indicator_holder.calc_total_indicator()
+        total_indicator = indicator_holder.calc_total_indicator(CE_total, EAG_total)
         utils.stdout_dataframe(total_indicator, title='total indicator')
         utils.save_csv(save_file=total_indicator, save_dir=indicator_savedir, save_filename='total_indicator.csv')
         
