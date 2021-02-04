@@ -31,7 +31,10 @@ def main(args):
         area_info = dataloader.area_info(conf['map_dname'], conf['area_fname'])     
 
         # Create result save directory
-        result_basedir = os.path.join(tra_dname, 'result')
+        if args.save_folder:
+            result_basedir = args.save_folder
+        else:
+            result_basedir = os.path.join(tra_dname, 'result')
         indicator_savedir = os.path.join(result_basedir, 'indicator') 
         
         for dir_path in [result_basedir, indicator_savedir]:
@@ -53,7 +56,9 @@ def main(args):
         indicator_holder = indicator_utils.IndicatorHolder()
         
         CE_total = []
+        CP_total = []
         EAG_total = []
+        which_area_all = []
 
         for tra_filename in tra_files:
             logger.debug('{} Evaluation START'.format(tra_filename))
@@ -71,13 +76,10 @@ def main(args):
             indicator_holder.add_indicator('file_name', tra_filename)
             
             # prepare evaluation point
-            print(len(ref_point))
-            print(len(ans_point))
             if ref_point is None:
                 evaluation_point = ans_point
             else:
                 evaluation_point = dataloader.drop_ans_duplicated_with_ref(ans_point, ref_point)
-            print(len(evaluation_point))
 
             if bup_info is None:
                 eval_point_outof_bup = ans_point
@@ -86,6 +88,10 @@ def main(args):
                 eval_point_outof_bup = dataloader.filter_evaluation_data_between_bup(evaluation_point, bup_info, bup_flag=False)
                 eval_point_between_bup = dataloader.filter_evaluation_data_between_bup(evaluation_point, bup_info, bup_flag=True)
                  
+            if area_info:
+                which_area = indicator_utils.area_of_ans(eval_point_outof_bup, area_info)
+                which_area_all.extend(which_area)
+
             # CE
             if 'CE' in args.indicators:
                 CE = evaluation_indicator.CE_calculation(tra_data, eval_point_outof_bup)
@@ -101,6 +107,21 @@ def main(args):
                 CE_hist = indicator_utils.draw_histgram(data=CE, indicator_name='CE', percentile=args.CE_percentile)
                 indicator_utils.save_figure(CE_hist, save_dir=CE_savedir, save_filename=f'Traj_No{tra_num}_CE_histgram.png')
             
+            # CP
+            if 'CP' in args.indicators:
+                CP = evaluation_indicator.CP_calculation(tra_data, eval_point_outof_bup)
+                CP_percentile = indicator_utils.calc_percentile(CP, args.CE_percentile)
+                indicator_holder.add_indicator(f'CP{args.CE_percentile}', CP)
+
+                CP_total.extend(CP['CP'])
+
+                CP_savedir = os.path.join(indicator_savedir, 'CP')
+                utils.create_dir(CP_savedir) 
+
+                indicator_utils.save_indicator(data=CP, save_dir=CP_savedir, save_filename=f'Traj_No{tra_num}_CP.csv')
+                CP_hist = indicator_utils.draw_histgram(data=CP, indicator_name='CP', percentile=args.CP_percentile)
+                indicator_utils.save_figure(CP_hist, save_dir=CP_savedir, save_filename=f'Traj_No{tra_num}_CP_histgram.png')
+
             # Area-weighted CA
             if 'CA' in args.indicators: 
                 if args.area_weights is None:
@@ -204,6 +225,8 @@ if __name__ == '__main__':
     parser.add_argument('trajection_folder', type=str, help='Set trajection folder name')
 
     parser.add_argument('ground_truth_folder', type=str, help='Set ground truth folder name')
+
+    parser.add_argument('--save_folder', type=str, help='Set save folder name')
     
     parser.add_argument('--VDR', action='store_const', dest='track', default=['VDR','PDR'],
                         const=['VDR'],help='Set  VDR track')
@@ -218,6 +241,12 @@ if __name__ == '__main__':
     
     parser.add_argument('--CE_percentile', type=int, default=50,
                         help='Calculate percentile of Circular Error')
+
+    parser.add_argument('--CP', action='append_const', dest='indicators', default=[],
+                        const='CP', help='Calculate Circular Precision')
+
+    parser.add_argument('--CP_percentile', type=int, default=50,
+                        help='Calculate percentile of Circular Presicion')
 
     parser.add_argument('--CA', action='append_const', dest='indicators', default=[],
                         const='CA', help='Calculate Area-weighted Circular Error Distribution Deviation')
@@ -246,7 +275,7 @@ if __name__ == '__main__':
                         help='Logger debug mode')
 
     args = parser.parse_args()
-    args.indicators = ['CE', 'CA', 'EAG', 'requirement_velocity', 'requirement_obstacle'] if not args.indicators else args.indicators
+    args.indicators = ['CE', 'CP', 'EAG', 'requirement_velocity', 'requirement_obstacle'] if not args.indicators else args.indicators
     
     #　Logger setting
     logger = getLogger(__name__)

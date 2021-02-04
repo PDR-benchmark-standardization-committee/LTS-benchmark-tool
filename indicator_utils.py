@@ -28,6 +28,15 @@ class IndicatorHolder(object):
         total_indicator['EAG50'] = np.median(EAG_total)
         return total_indicator
 
+    def calc_total_indicator_each_area(self, total, which_area):
+        df = pd.DataFrame()
+        area_indicator = defaultdict(list)
+        for area, indicator in zip(which_area, total):
+            area_indicator[area].append(total)
+        area_indicator50 = pd.DataFrame({area: np.median(v) for area, v in area_indicator.items()})
+        return area_indicator50
+
+
 def save_indicator(data, save_dir, save_filename):
     '''
     save CE, EAG as csv
@@ -41,6 +50,35 @@ def save_indicator(data, save_dir, save_filename):
     indicator_save_path = os.path.join(save_dir, save_filename)
     data.to_csv(indicator_save_path, index=False)
 
+def area_of_ans(ans_point, area_info):
+    '''
+    Fucntion to classify each rows of ans_point to area_num
+
+    Parameters
+    ----------
+    ans_point : pd.DataFrame
+    area_info : pd.DataFrame
+
+    Returns
+    -------
+    which_area_series : pd.Series
+        number of area
+    '''
+    def get_area(row):
+        for area_num in range(1, len(area_info)+1):
+            target_area_info = area_info[area_info['area']==area_num] 
+            x_min = target_area_info['x_position_m'] - target_area_info['x_length']
+            x_max = target_area_info['x_position_m'] + target_area_info['x_length']
+            y_min = target_area_info['y_position_m'] - target_area_info['y_length']
+            y_max = target_area_info['y_position_m'] + target_area_info['y_length']
+
+            if x_min.values[0] <= row['x_position_m'] <= x_max.values[0] \
+                and y_min.values[0] <= row['y_position_m'] <= y_max.values[0]:
+                return area_num
+        return 0
+    which_area_series = ans_point.apply(get_area, axis=1)
+    return which_area_series 
+    
 def draw_cumulative_sum(data, indicator_name):
     '''
     draw cumulative sum of EAG and CE

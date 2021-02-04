@@ -51,8 +51,6 @@ class CalcIndicator(object):
                 diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
                 min_index = diff_abs.argmin()
 
-                error_m_value = []
-
                 if diff_abs[min_index] <= sec_limit:
                     error_m_value = math.hypot(row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index])
                 else: #no match
@@ -142,6 +140,70 @@ class CalcIndicator(object):
         data = pd.DataFrame({'unixtime' : unixtime_list, 'EAG' : EAG_list, 'delta_t' : delta_t_list, 'correspond_time' : correspond_time_list})#debug data
         return data
 
+    def CP_calculation(self, tra_data, ans_point):
+        '''
+        Calculate Calculate Circular Presicion(CP)
+        
+        Parameters
+        ----------
+        tra_data : DataFrame
+            columns = ['unixtime', 'x_position_m', 'y_position_m']
+        
+        ans_point : DataFrame 
+            groudtruth point data for evaluation
+
+        Returns
+        ------- 
+        CP: float
+        '''
+        logger.debug('Calculate Calculate Circular Presicion(CP) START')   
+
+        unixtime_list = []
+        correspond_time_list = []
+
+        error_xy_series = self.calc_error_dist(tra_data, ans_point)
+        mean_error_xy = error_xy_series.mean()
+
+        def Calc_CP(row):
+            sec_limit = 1 #match time limit(sec)
+            try:
+                diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
+                min_index = diff_abs.argmin()
+
+                if diff_abs[min_index] <= sec_limit:
+                    error_x = row['x_position_m'] - tra_data['x_position_m'][min_index]
+                    error_y = row['y_position_m'] - tra_data['y_position_m'][min_index]
+                    error_dist_value = math.hypot(error_x - mean_error_xy['x_error'], error_y - mean_error_xy['y_error'])
+                else: #no match
+                    error_dist_value = -1
+                
+                unixtime_list.append(row['unixtime'])
+                correspond_time_list.append(diff_abs[min_index])
+                return error_dist_value
+            
+            except ValueError:
+                return 'error'
+
+        CP_list = ans_point.apply(Calc_CP, axis=1).values
+        CP_list = [num for num in CP_list if num != 'error']
+        
+        logger.debug('CP:{}'.format(CP_list))
+        logger.debug('Calculate Presicion Error(CP) END')
+        
+        data = pd.DataFrame({'unixtime' : unixtime_list, 'CP' : CP_list, 'correspond_time' : correspond_time_list})
+        return data
+    
+    def calc_error_dist(self, tra_data, ans_point):
+        def error_m_xy(row):    
+            diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
+            min_index = diff_abs.argmin()
+            x_error, y_error = row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index]
+            return  pd.Series([x_error, y_error])
+
+        result = pd.DataFrame({'x_error':[], 'y_error':[]})
+        result[['x_error', 'y_error']] = ans_point.apply(error_m_xy, axis=1)
+        return result
+    
     def CA_2Dhistgram_calculation(self, tra_data, ans_point):
         '''
         Calculate Circular Error Distribution Deviation by 2D histgram (CA)
@@ -160,18 +222,7 @@ class CalcIndicator(object):
         fig: matplotlib Figure object 
         '''
         
-        def calc_error_dist(tra_data, ans_point):
-            def error_m_xy(row):    
-                diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
-                min_index = diff_abs.argmin()
-                x_error, y_error = row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index]
-                return  pd.Series([x_error, y_error])
-
-            result = pd.DataFrame({'x_error':[], 'y_error':[]})
-            result[['x_error', 'y_error']] = ans_point.apply(error_m_xy, axis=1)
-            return result
-    
-        error_xy_series = calc_error_dist(tra_data, ans_point)
+        error_xy_series = self.calc_error_dist(tra_data, ans_point)
         
         def calc_2D_histgram_mod(x_error_list, y_error_list):
             
@@ -233,19 +284,7 @@ class CalcIndicator(object):
         fig: matplotlib Figure object 
         '''
 
-        def calc_error_dist(tra_data, ans_point):
-            def error_m_xy(row):    
-            # Rounded down unixtime
-                diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
-                min_index = diff_abs.argmin()
-                x_error, y_error = row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index]
-                return  pd.Series([x_error, y_error])
-
-            result = pd.DataFrame({'x_error':[], 'y_error':[]})
-            result[['x_error', 'y_error']] = ans_point.apply(error_m_xy, axis=1)
-            return result
-    
-        error_xy_series = calc_error_dist(tra_data, ans_point)
+        error_xy_series = self.calc_error_dist(tra_data, ans_point)
         
         def calc_kernel_density_mod(x, y, bw_method=None):
             fig = plt.figure()
