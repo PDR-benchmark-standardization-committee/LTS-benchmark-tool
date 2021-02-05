@@ -37,7 +37,8 @@ class CalcIndicator(object):
         
         Returns
         -------
-        CE_list : list of float
+        CE_df : DataFrame
+            columns = ['unixtime', 'CE', 'correspond_time']
         '''
 
         logger.debug('Calculate Circular Error (CE) START')
@@ -69,8 +70,8 @@ class CalcIndicator(object):
         logger.debug('CE:{}'.format(CE_list))
         logger.debug('Calculate Circular Error(CE) END')
         
-        data = pd.DataFrame({'unixtime' : unixtime_list, 'CE' : CE_list, 'correspond_time' : correspond_time_list})
-        return data
+        CE_df = pd.DataFrame({'unixtime' : unixtime_list, 'CE' : CE_list, 'correspond_time' : correspond_time_list})
+        return CE_df
 
     def EAG_calculation(self, tra_point, ref_point, eval_point_ALIP):
         '''
@@ -87,7 +88,8 @@ class CalcIndicator(object):
 
         Returns
         -------
-        EAG_list : list of float
+        EAG_df : DataFrame
+            columns = ['unixtime', 'EAG', 'delta_t', 'correspond_time']
 
         '''
 
@@ -153,7 +155,8 @@ class CalcIndicator(object):
 
         Returns
         ------- 
-        CP: float
+        CP_df : DataFrame
+            columns = ['unixtime', 'CP', 'correspond_time']
         '''
         logger.debug('Calculate Calculate Circular Presicion(CP) START')   
 
