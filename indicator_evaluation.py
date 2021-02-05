@@ -24,7 +24,7 @@ logger = getLogger("__main__").getChild("indicator_evaluation")
 warnings.filterwarnings('ignore')
 
 class CalcIndicator(object):
-    def CE_calculation(self, tra_data, eval_point_outof_bup):
+    def CE_calculation(self, tra_data, eval_point_ALAP):
         '''
         Calculate Circular Error (CE)
 
@@ -32,8 +32,8 @@ class CalcIndicator(object):
         ----------
         tra_data : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
-        eval_point_outof_bup : DataFrame
-            evaluation poins out of bup, columns = ['unixtime', 'x_position_m', 'y_position_m'] 
+        eval_point_ALAP : DataFrame
+            evaluation points in ALAP, columns = ['unixtime', 'x_position_m', 'y_position_m'] 
         
         Returns
         -------
@@ -63,7 +63,7 @@ class CalcIndicator(object):
             except ValueError:
                 return 'error'
 
-        CE_list = eval_point_outof_bup.apply(Calc_CE, axis=1).values
+        CE_list = eval_point_ALAP.apply(Calc_CE, axis=1).values
         CE_list = [num for num in CE_list if num != 'error']
         #CE_list.sort()
         
@@ -73,7 +73,7 @@ class CalcIndicator(object):
         data = pd.DataFrame({'unixtime' : unixtime_list, 'CE' : CE_list, 'correspond_time' : correspond_time_list})#debug data
         return data
 
-    def EAG_calculation(self, tra_data, ref_point, eval_point_between_bup):
+    def EAG_calculation(self, tra_data, ref_point, eval_point_ALIP):
         '''
         Calculate Error Accumulation Gradient (EAG)
 
@@ -83,8 +83,8 @@ class CalcIndicator(object):
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         ref_point : DataFrame 
             groudtruth point data for evaluation 
-        eval_point_between_bup : DataFrame
-            evaluation poins between bup, columns = ['unixtime', 'x_position_m', 'y_position_m']
+        eval_point_ALIP : DataFrame
+            evaluation poins in ALIP, columns = ['unixtime', 'x_position_m', 'y_position_m']
 
         Returns
         -------
@@ -94,13 +94,13 @@ class CalcIndicator(object):
 
         logger.debug('Calculate Error Accumulation Gradient (EAG) START')   
 
-        # Calculate unixtime absolute error between reference point and evaluation point between BUP
+        # Calculate unixtime absolute error between reference point and evaluation point in ALIP
         def unixtime_delta_min(x):
             delta_t_list = abs(np.full(len(ref_point), x) - ref_point['unixtime'])
             delta_t_min = min(delta_t_list)
             return delta_t_min
 
-        ans_point_delta_t = eval_point_between_bup['unixtime'].apply(lambda x : unixtime_delta_min(x))
+        ans_point_delta_t = eval_point_ALIP['unixtime'].apply(lambda x : unixtime_delta_min(x))
         unixtime_list = []##debug data
         delta_t_list = []##debug data
         correspond_time_list = []##debug data
@@ -125,12 +125,12 @@ class CalcIndicator(object):
             except ValueError:
                 return 'error'
 
-        eval_point_between_bup.reset_index(drop=True, inplace=True)
+        eval_point_ALIP.reset_index(drop=True, inplace=True)
         # Escape pandas SettingwithCopyWarning
-        eval_point_between_bup = eval_point_between_bup.copy() 
-        eval_point_between_bup['delta_t'] =  ans_point_delta_t.values
+        eval_point_ALIP = eval_point_ALIP.copy() 
+        eval_point_ALIP['delta_t'] =  ans_point_delta_t.values
 
-        EAG_list = eval_point_between_bup.apply(Calc_EAG, axis=1).values              
+        EAG_list = eval_point_ALIP.apply(Calc_EAG, axis=1).values              
         EAG_list = [num for num in EAG_list if num != 'error']
         #EAG_list.sort() 
         

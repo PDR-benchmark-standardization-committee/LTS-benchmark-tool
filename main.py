@@ -71,7 +71,7 @@ def main(args):
             # Load ground truth files
             ref_point = dataloader.load_point(conf['ref_dname'], conf['ref_fname'].format(tra_num))
             ans_point = dataloader.load_point(conf['ans_dname'], conf['ans_fname'].format(tra_num))
-            bup_info = dataloader.bup_info(conf['bup_dname'], conf['bup_info_fname'].format(tra_num))
+            ALIP_info = dataloader.ALIP_info(conf['ALIP_dname'], conf['ALIP_info_fname'].format(tra_num))
 
             indicator_holder.add_indicator('file_name', tra_filename)
             
@@ -81,20 +81,20 @@ def main(args):
             else:
                 evaluation_point = dataloader.drop_ans_duplicated_with_ref(ans_point, ref_point)
 
-            if bup_info is None:
-                eval_point_outof_bup = ans_point
-                eval_point_between_bup = pd.DataFrame(index=[], columns=['unixtime', 'x_position_m', 'y_position_m'])
+            if ALIP_info is None:
+                eval_point_ALAP = ans_point
+                eval_point_ALIP = pd.DataFrame(index=[], columns=['unixtime', 'x_position_m', 'y_position_m'])
             else:
-                eval_point_outof_bup = dataloader.filter_evaluation_data_between_bup(evaluation_point, bup_info, bup_flag=False)
-                eval_point_between_bup = dataloader.filter_evaluation_data_between_bup(evaluation_point, bup_info, bup_flag=True)
+                eval_point_ALAP = dataloader.filter_evaluation_data_ALIP(evaluation_point, ALIP_info, ALIP_flag=False)
+                eval_point_ALIP = dataloader.filter_evaluation_data_ALIP(evaluation_point, ALIP_info, ALIP_flag=True)
                  
             if area_info:
-                which_area = indicator_utils.area_of_ans(eval_point_outof_bup, area_info)
+                which_area = indicator_utils.area_of_ans(eval_point_ALIP, area_info)
                 which_area_all.extend(which_area)
 
             # CE
             if 'CE' in args.indicators:
-                CE = evaluation_indicator.CE_calculation(tra_data, eval_point_outof_bup)
+                CE = evaluation_indicator.CE_calculation(tra_data, eval_point_ALAP)
                 CE_percentile = indicator_utils.calc_percentile(CE, args.CE_percentile)
                 indicator_holder.add_indicator(f'CE{args.CE_percentile}', CE)
 
@@ -109,7 +109,7 @@ def main(args):
             
             # CP
             if 'CP' in args.indicators:
-                CP = evaluation_indicator.CP_calculation(tra_data, eval_point_outof_bup)
+                CP = evaluation_indicator.CP_calculation(tra_data, eval_point_ALAP)
                 CP_percentile = indicator_utils.calc_percentile(CP, args.CE_percentile)
                 indicator_holder.add_indicator(f'CP{args.CE_percentile}', CP)
 
@@ -156,7 +156,7 @@ def main(args):
                 
             # EAG
             if 'EAG' in args.indicators:
-                EAG = evaluation_indicator.EAG_calculation(tra_data, ref_point, eval_point_between_bup) 
+                EAG = evaluation_indicator.EAG_calculation(tra_data, ref_point, eval_point_ALIP) 
                 if EAG.empty:
                     EAG = pd.DataFrame([-1])
                 EAG_percentile = indicator_utils.calc_percentile(EAG, args.EAG_percentile)
