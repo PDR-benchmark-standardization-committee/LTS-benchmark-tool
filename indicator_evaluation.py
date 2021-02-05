@@ -24,13 +24,13 @@ logger = getLogger("__main__").getChild("indicator_evaluation")
 warnings.filterwarnings('ignore')
 
 class CalcIndicator(object):
-    def CE_calculation(self, tra_data, eval_point_ALAP):
+    def CE_calculation(self, tra_point, eval_point_ALAP):
         '''
         Calculate Circular Error (CE)
 
         Parameters
         ----------
-        tra_data : DataFrame
+        tra_point : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         eval_point_ALAP : DataFrame
             evaluation points in ALAP, columns = ['unixtime', 'x_position_m', 'y_position_m'] 
@@ -48,16 +48,16 @@ class CalcIndicator(object):
         def Calc_CE(row):
             sec_limit = 1 #match time limit(sec)
             try:
-                diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
+                diff_abs = np.abs(np.full(len(tra_point), row['unixtime']) - tra_point['unixtime'])
                 min_index = diff_abs.argmin()
 
                 if diff_abs[min_index] <= sec_limit:
-                    error_m_value = math.hypot(row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index])
+                    error_m_value = math.hypot(row['x_position_m'] - tra_point['x_position_m'][min_index], row['y_position_m'] - tra_point['y_position_m'][min_index])
                 else: #no match
                     error_m_value = -1
 
-                unixtime_list.append(row['unixtime'])##debug data
-                correspond_time_list.append(diff_abs[min_index])##debug data
+                unixtime_list.append(row['unixtime'])
+                correspond_time_list.append(diff_abs[min_index])
                 return error_m_value
             
             except ValueError:
@@ -65,21 +65,20 @@ class CalcIndicator(object):
 
         CE_list = eval_point_ALAP.apply(Calc_CE, axis=1).values
         CE_list = [num for num in CE_list if num != 'error']
-        #CE_list.sort()
         
         logger.debug('CE:{}'.format(CE_list))
         logger.debug('Calculate Circular Error(CE) END')
         
-        data = pd.DataFrame({'unixtime' : unixtime_list, 'CE' : CE_list, 'correspond_time' : correspond_time_list})#debug data
+        data = pd.DataFrame({'unixtime' : unixtime_list, 'CE' : CE_list, 'correspond_time' : correspond_time_list})
         return data
 
-    def EAG_calculation(self, tra_data, ref_point, eval_point_ALIP):
+    def EAG_calculation(self, tra_point, ref_point, eval_point_ALIP):
         '''
         Calculate Error Accumulation Gradient (EAG)
 
         Parameters
         ----------
-        tra_data : DataFrame
+        tra_point : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         ref_point : DataFrame 
             groudtruth point data for evaluation 
@@ -100,26 +99,26 @@ class CalcIndicator(object):
             delta_t_min = min(delta_t_list)
             return delta_t_min
 
-        ans_point_delta_t = eval_point_ALIP['unixtime'].apply(lambda x : unixtime_delta_min(x))
-        unixtime_list = []##debug data
-        delta_t_list = []##debug data
-        correspond_time_list = []##debug data
+        eval_point_delta_t = eval_point_ALIP['unixtime'].apply(lambda x : unixtime_delta_min(x))
+        unixtime_list = []
+        delta_t_list = []
+        correspond_time_list = []
         def Calc_EAG(row):
             sec_limit = 1 #match time limit(sec)
             try:
-                diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
+                diff_abs = np.abs(np.full(len(tra_point), row['unixtime']) - tra_point['unixtime'])
                 min_index = diff_abs.argmin()
 
                 error_m_s_value = []
                 
                 if diff_abs[min_index] <= sec_limit:
-                    error_m_s_value = math.hypot(row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index]) / row['delta_t']
+                    error_m_s_value = math.hypot(row['x_position_m'] - tra_point['x_position_m'][min_index], row['y_position_m'] - tra_point['y_position_m'][min_index]) / row['delta_t']
                 else: #no match
                     error_m_s_value = -1
                 
-                unixtime_list.append(row['unixtime'])##debug data
-                delta_t_list.append(row['delta_t'])##debug data
-                correspond_time_list.append(diff_abs[min_index])##debug data
+                unixtime_list.append(row['unixtime'])
+                delta_t_list.append(row['delta_t'])
+                correspond_time_list.append(diff_abs[min_index])
                 return error_m_s_value
             
             except ValueError:
@@ -128,7 +127,7 @@ class CalcIndicator(object):
         eval_point_ALIP.reset_index(drop=True, inplace=True)
         # Escape pandas SettingwithCopyWarning
         eval_point_ALIP = eval_point_ALIP.copy() 
-        eval_point_ALIP['delta_t'] =  ans_point_delta_t.values
+        eval_point_ALIP['delta_t'] =  eval_point_delta_t.values
 
         EAG_list = eval_point_ALIP.apply(Calc_EAG, axis=1).values              
         EAG_list = [num for num in EAG_list if num != 'error']
@@ -137,19 +136,19 @@ class CalcIndicator(object):
         logger.debug('EAG:{}'.format(EAG_list))
         logger.debug('Calculate Error Accumulation Gradient (EAG) END')
 
-        data = pd.DataFrame({'unixtime' : unixtime_list, 'EAG' : EAG_list, 'delta_t' : delta_t_list, 'correspond_time' : correspond_time_list})#debug data
+        data = pd.DataFrame({'unixtime' : unixtime_list, 'EAG' : EAG_list, 'delta_t' : delta_t_list, 'correspond_time' : correspond_time_list})
         return data
 
-    def CP_calculation(self, tra_data, ans_point):
+    def CP_calculation(self, tra_point, eval_point):
         '''
         Calculate Calculate Circular Presicion(CP)
         
         Parameters
         ----------
-        tra_data : DataFrame
+        tra_point : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         
-        ans_point : DataFrame 
+        eval_point : DataFrame 
             groudtruth point data for evaluation
 
         Returns
@@ -161,18 +160,18 @@ class CalcIndicator(object):
         unixtime_list = []
         correspond_time_list = []
 
-        error_xy_series = self.calc_error_dist(tra_data, ans_point)
+        error_xy_series = self.calc_error_dist(tra_point, eval_point)
         mean_error_xy = error_xy_series.mean()
 
         def Calc_CP(row):
             sec_limit = 1 #match time limit(sec)
             try:
-                diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
+                diff_abs = np.abs(np.full(len(tra_point), row['unixtime']) - tra_point['unixtime'])
                 min_index = diff_abs.argmin()
 
                 if diff_abs[min_index] <= sec_limit:
-                    error_x = row['x_position_m'] - tra_data['x_position_m'][min_index]
-                    error_y = row['y_position_m'] - tra_data['y_position_m'][min_index]
+                    error_x = row['x_position_m'] - tra_point['x_position_m'][min_index]
+                    error_y = row['y_position_m'] - tra_point['y_position_m'][min_index]
                     error_dist_value = math.hypot(error_x - mean_error_xy['x_error'], error_y - mean_error_xy['y_error'])
                 else: #no match
                     error_dist_value = -1
@@ -184,7 +183,7 @@ class CalcIndicator(object):
             except ValueError:
                 return 'error'
 
-        CP_list = ans_point.apply(Calc_CP, axis=1).values
+        CP_list = eval_point.apply(Calc_CP, axis=1).values
         CP_list = [num for num in CP_list if num != 'error']
         
         logger.debug('CP:{}'.format(CP_list))
@@ -193,27 +192,27 @@ class CalcIndicator(object):
         data = pd.DataFrame({'unixtime' : unixtime_list, 'CP' : CP_list, 'correspond_time' : correspond_time_list})
         return data
     
-    def calc_error_dist(self, tra_data, ans_point):
+    def calc_error_dist(self, tra_point, eval_point):
         def error_m_xy(row):    
-            diff_abs = np.abs(np.full(len(tra_data), row['unixtime']) - tra_data['unixtime'])
+            diff_abs = np.abs(np.full(len(tra_point), row['unixtime']) - tra_point['unixtime'])
             min_index = diff_abs.argmin()
-            x_error, y_error = row['x_position_m'] - tra_data['x_position_m'][min_index], row['y_position_m'] - tra_data['y_position_m'][min_index]
+            x_error, y_error = row['x_position_m'] - tra_point['x_position_m'][min_index], row['y_position_m'] - tra_point['y_position_m'][min_index]
             return  pd.Series([x_error, y_error])
 
         result = pd.DataFrame({'x_error':[], 'y_error':[]})
-        result[['x_error', 'y_error']] = ans_point.apply(error_m_xy, axis=1)
+        result[['x_error', 'y_error']] = eval_point.apply(error_m_xy, axis=1)
         return result
     
-    def CA_2Dhistgram_calculation(self, tra_data, ans_point):
+    def CA_2Dhistgram_calculation(self, tra_point, eval_point):
         '''
         Calculate Circular Error Distribution Deviation by 2D histgram (CA)
         
         Parameters
         ----------
-        tra_data : DataFrame
+        tra_point : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         
-        ans_point : DataFrame 
+        eval_point : DataFrame 
             groudtruth point data for evaluation
 
         Returns
@@ -222,7 +221,7 @@ class CalcIndicator(object):
         fig: matplotlib Figure object 
         '''
         
-        error_xy_series = self.calc_error_dist(tra_data, ans_point)
+        error_xy_series = self.calc_error_dist(tra_point, eval_point)
         
         def calc_2D_histgram_mod(x_error_list, y_error_list):
             
@@ -263,16 +262,16 @@ class CalcIndicator(object):
 
         return CA, fig
 
-    def CA_KernelDensity_calculation(self, tra_data, ans_point, band_width=None):
+    def CA_KernelDensity_calculation(self, tra_point, eval_point, band_width=None):
         '''
         Calculate Circular Error Distribution Deviation by kernel density (CA)
         
         Parameters
         ----------
-        tra_data : DataFrame
+        tra_point : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         
-        ans_point : DataFrame 
+        eval_point : DataFrame 
             groudtruth point data for evaluation
 
         band_width : float
@@ -284,7 +283,7 @@ class CalcIndicator(object):
         fig: matplotlib Figure object 
         '''
 
-        error_xy_series = self.calc_error_dist(tra_data, ans_point)
+        error_xy_series = self.calc_error_dist(tra_point, eval_point)
         
         def calc_kernel_density_mod(x, y, bw_method=None):
             fig = plt.figure()
@@ -326,16 +325,16 @@ class CalcIndicator(object):
         
         return CA, fig
 
-    def Area_weighted_CA_calculation(self, tra_data, evaluation_point, area_info, 
+    def Area_weighted_CA_calculation(self, tra_point, eval_point, area_info, 
                                     area_weights, use_2d_hist=False, band_width=None):
         '''
         Calculate Area Weighted Circular Error Distribution Deviation 
         
         Parameters
         ---------
-        tra_data: DataFrame
+        tra_point: DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
-        evaluation_point: DataFrame
+        eval_point: DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         area_info: DataFrame
             columns = ['area', 'x_position_m', 'y_position_m', 'x_length', 'y_length']
@@ -354,7 +353,7 @@ class CalcIndicator(object):
         area_list = []
         fig_list = []
         for area_num in range(len(area_info)):
-            area_eval_point = indicator_utils.filter_area_point(evaluation_point, area_info, area_num+1)
+            area_eval_point = indicator_utils.filter_area_point(eval_point, area_info, area_num+1)
             if len(area_eval_point) == 0:
                 CA = 0
                 CA_fig = plt.figure()
@@ -362,9 +361,9 @@ class CalcIndicator(object):
                 fig_list.append(CA_fig)
             else:
                 if use_2d_hist:
-                    CA, CA_fig = self.CA_2Dhistgram_calculation(tra_data, area_eval_point)
+                    CA, CA_fig = self.CA_2Dhistgram_calculation(tra_point, area_eval_point)
                 else:
-                    CA, CA_fig = self.CA_KernelDensity_calculation(tra_data, area_eval_point, band_width=band_width)
+                    CA, CA_fig = self.CA_KernelDensity_calculation(tra_point, area_eval_point, band_width=band_width)
 
             CA_list.append(CA)
             area_list.append(area_num+1)
@@ -380,13 +379,13 @@ class CalcIndicator(object):
        
         return area_weighted_CA, CA_df, fig_list
 
-    def requirement_moving_velocity_check(self, tra_data, appropriate_velocity=1.5):
+    def requirement_moving_velocity_check(self, tra_point, appropriate_velocity=1.5):
         '''
         Calculate Requirement for moving velocity
 
         Parameters
         ----------
-        tra_data : DataFrame
+        tra_point : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         
         appropriate_velocity : float
@@ -402,13 +401,13 @@ class CalcIndicator(object):
         logger.debug('Appropriate velocity: {}'.format(appropriate_velocity))
 
         # Calculate difference between each row
-        tra_dif = tra_data.diff()[1:].copy()
+        tra_dif = tra_point.diff()[1:].copy()
         
         velocity_list = np.hypot(tra_dif['x_position_m'], tra_dif['y_position_m']) / tra_dif['unixtime']
 
         appropriate_list = [int(velocity < appropriate_velocity) for velocity in velocity_list]
         
-        moving_velocity_check = pd.DataFrame({'unixtime': tra_data['unixtime'][1:].values,
+        moving_velocity_check = pd.DataFrame({'unixtime': tra_point['unixtime'][1:].values,
                                              'velocity': velocity_list,
                                              'flag': appropriate_list})
 
@@ -419,13 +418,13 @@ class CalcIndicator(object):
 
         return moving_velocity_check
 
-    def requirement_obstacle_check(self, tra_data, obstacle, map_size):
+    def requirement_obstacle_check(self, tra_point, obstacle, map_size):
         '''
         Calculate requirement for obstacle avoidance
 
         Parameters
         ---------- 
-        tra_data : DataFrame
+        tra_point : DataFrame
             columns = ['unixtime', 'x_position_m', 'y_position_m']
         obstacle : ndarray
             groudtruth obstacle bitmap data 
@@ -444,16 +443,16 @@ class CalcIndicator(object):
         y_block_m = len(obstacle) / map_size[1]
 
         # Convert bitmap coordinate to mapsize coordinate
-        tra_data = tra_data.copy()
-        tra_data['x_block_num'] = (tra_data['x_position_m'] * x_block_m).map(lambda x: int(x) -1 if int(x)!=0 else 0)
+        tra_point = tra_point.copy()
+        tra_point['x_block_num'] = (tra_point['x_position_m'] * x_block_m).map(lambda x: int(x) -1 if int(x)!=0 else 0)
 
-        tra_data['y_block_num'] = ((map_size[1] - tra_data['y_position_m']) * y_block_m).map(lambda x: int(x) -1 if int(x)!=0 else 0)
+        tra_point['y_block_num'] = ((map_size[1] - tra_point['y_position_m']) * y_block_m).map(lambda x: int(x) -1 if int(x)!=0 else 0)
 
-        dif_tra_data = tra_data.diff()[1:].reset_index(drop=True) # x_block_num_t1 - x_block_num
-        dif_tra_data = dif_tra_data.append(pd.Series([0, 0, 0, 0, 0], index=dif_tra_data.columns, name=len(tra_data)-1)) 
+        dif_tra_point = tra_point.diff()[1:].reset_index(drop=True) # x_block_num_t1 - x_block_num
+        dif_tra_point = dif_tra_point.append(pd.Series([0, 0, 0, 0, 0], index=dif_tra_point.columns, name=len(tra_point)-1)) 
         
-        tra_data['x_block_num_dif'] = dif_tra_data['x_block_num'].astype(int)
-        tra_data['y_block_num_dif'] = dif_tra_data['y_block_num'].astype(int)
+        tra_point['x_block_num_dif'] = dif_tra_point['x_block_num'].astype(int)
+        tra_point['y_block_num_dif'] = dif_tra_point['y_block_num'].astype(int)
         
         # Auxiliary function to calculate E_obstacle
         # check_pattern, is_inside_map, is_obstacle, is_obstacle_around, is_obstacle_exist, 
@@ -647,10 +646,10 @@ class CalcIndicator(object):
             else:
                 return abs(row['x_block_num_dif'])
                 
-        tra_data['pattern'] = tra_data.apply(check_pattern, axis=1)
+        tra_point['pattern'] = tra_point.apply(check_pattern, axis=1)
         
-        obstacle_cordinate_count =  tra_data.progress_apply(ObstacleCordinate_count, axis=1)
-        check_cordinate_count = tra_data.apply(CheckCordinate_count, axis=1)
+        obstacle_cordinate_count =  tra_point.progress_apply(ObstacleCordinate_count, axis=1)
+        check_cordinate_count = tra_point.apply(CheckCordinate_count, axis=1)
 
         obstacle_check = pd.DataFrame({'check_cordinate_count': list(check_cordinate_count),
                                       'obstacle_cordinate_count': list(obstacle_cordinate_count)})
