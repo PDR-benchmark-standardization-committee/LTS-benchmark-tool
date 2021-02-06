@@ -55,11 +55,6 @@ def main(args):
         evaluation_indicator = CalcIndicator()
         indicator_holder = indicator_utils.IndicatorHolder()
         
-        CE_total = []
-        CP_total = []
-        EAG_total = []
-        which_area_all = []
-
         for tra_filename in tra_files:
             logger.debug('{} Evaluation START'.format(tra_filename))
             print('{} evaluation progress...'.format(tra_filename))
@@ -98,7 +93,7 @@ def main(args):
                 CE_percentile = indicator_utils.calc_percentile(CE, args.CE_percentile)
                 indicator_holder.add_indicator(f'CE{args.CE_percentile}', CE)
 
-                CE_total.extend(CE['CE'])
+                indicator_holder.add_total_indicator('CE', CE['CE'])
 
                 CE_savedir = os.path.join(indicator_savedir, 'CE')
                 utils.create_dir(CE_savedir) 
@@ -113,7 +108,7 @@ def main(args):
                 CP_percentile = indicator_utils.calc_percentile(CP, args.CE_percentile)
                 indicator_holder.add_indicator(f'CP{args.CE_percentile}', CP)
 
-                CP_total.extend(CP['CP'])
+                indicator_holder.add_total_indicator('CP', CP['CP'])
 
                 CP_savedir = os.path.join(indicator_savedir, 'CP')
                 utils.create_dir(CP_savedir) 
@@ -161,7 +156,8 @@ def main(args):
                     EAG = pd.DataFrame([-1])
                 EAG_percentile = indicator_utils.calc_percentile(EAG, args.EAG_percentile)
                 indicator_holder.add_indicator(f'EAG{args.EAG_percentile}', EAG_percentile)
-                EAG_total.extend(EAG['EAG'])
+
+                indicator_holder.add_total_indicator('EAG', EAG['EAG'])
 
                 EAG_savedir = os.path.join(indicator_savedir, 'EAG')
                 utils.create_dir(EAG_savedir) 
@@ -199,18 +195,20 @@ def main(args):
         utils.save_csv(save_file=file_indicator_summary, save_dir=indicator_savedir, save_filename='file_indicator.csv')
 
         # Show total results
-        total_indicator = indicator_holder.calc_total_indicator(CE_total, EAG_total)
+        total_indicator = indicator_holder.summarize_total_indicator()
         utils.stdout_dataframe(total_indicator, title='total indicator')
         utils.save_csv(save_file=total_indicator, save_dir=indicator_savedir, save_filename='total_indicator.csv')
         
         # Draw histgram and cumulative sum for total CE and EAG
         if 'CE' in args.indicators:
+            CE_total = indicator_holder.indicator_total['CE']
             CE_total_hist = indicator_utils.draw_histgram(data=CE_total, indicator_name='CE', percentile=args.CE_percentile)
             indicator_utils.save_figure(CE_total_hist, save_dir=CE_savedir, save_filename=f'CE_total_histgram.png')
             CE_cumulative_sum = indicator_utils.draw_cumulative_sum(CE_total, 'CE')
             indicator_utils.save_figure(CE_cumulative_sum, save_dir=CE_savedir, save_filename=f'CE_total_cumulative_sum.png')
 
         if 'EAG' in args.indicators:
+            EAG_total = indicator_holder.indicator_total['EAG']
             EAG_total_hist = indicator_utils.draw_histgram(data=EAG_total, indicator_name='EAG', percentile=args.EAG_percentile)
             indicator_utils.save_figure(EAG_total_hist, save_dir=EAG_savedir, save_filename=f'EAG_total_histgram.png')
             EAG_cumulative_sum = indicator_utils.draw_cumulative_sum(EAG_total, 'EAG')
@@ -275,7 +273,7 @@ if __name__ == '__main__':
                         help='Logger debug mode')
 
     args = parser.parse_args()
-    args.indicators = ['CE', 'CP', 'EAG', 'requirement_velocity', 'requirement_obstacle'] if not args.indicators else args.indicators
+    args.indicators = ['CE', 'CA', 'EAG', 'requirement_velocity', 'requirement_obstacle'] if not args.indicators else args.indicators
     
     #　Logger setting
     logger = getLogger(__name__)

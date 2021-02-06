@@ -13,20 +13,24 @@ logger = getLogger("__main__").getChild("indicator utility")
 class IndicatorHolder(object):
     def __init__(self): 
         self.indicator_values = defaultdict(list)
+        self.indicator_total = defaultdict(list)
         self.file_indicator = None
 
     def add_indicator(self, indicator_name, indicator):
         self.indicator_values[indicator_name].append(indicator)
         
+    def add_total_indicator(self, indicator_name, indicator_series):
+        self.indicator_total[indicator_name].extend(indicator_series)
+
     def summarize_file_indicator(self):
         self.file_indicator = pd.DataFrame(self.indicator_values)
         return self.file_indicator
 
-    def calc_total_indicator(self, CE_total, EAG_total):
-        total_indicator = pd.DataFrame(self.file_indicator.mean()).T
-        total_indicator['CE50'] = np.median(CE_total)
-        total_indicator['EAG50'] = np.median(EAG_total)
-        return total_indicator
+    def summarize_total_indicator(self):
+        indicator_summary = pd.DataFrame(self.file_indicator.mean()).T
+        for key, indicator in self.indicator_total.items():
+            indicator_summary[key] = np.median(indicator)
+        return indicator_summary
 
     def calc_total_indicator_each_area(self, total, which_area):
         df = pd.DataFrame()
