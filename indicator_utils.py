@@ -13,14 +13,19 @@ logger = getLogger("__main__").getChild("indicator utility")
 class IndicatorHolder(object):
     def __init__(self): 
         self.indicator_values = defaultdict(list)
-        self.indicator_total = defaultdict(list)
+        self.indicator_total = defaultdict(pd.Series)
+        self.which_area = pd.DataFrame()
         self.file_indicator = None
 
-    def add_indicator(self, indicator_name, indicator):
+    def add_indicator_percentile(self, indicator_name, indicator):
         self.indicator_values[indicator_name].append(indicator)
         
     def add_total_indicator(self, indicator_name, indicator_series):
-        self.indicator_total[indicator_name].extend(indicator_series)
+        self.indicator_total[indicator_name] = pd.concat([self.indicator_total[indicator_name],
+                                                          indicator_series], axis=0)
+
+    def add_total_area_info(self, which_area_info):
+        self.which_area = pd.concat([self.which_area, which_area_info], axis=0)
 
     def summarize_file_indicator(self):
         self.file_indicator = pd.DataFrame(self.indicator_values)
@@ -29,13 +34,13 @@ class IndicatorHolder(object):
     def summarize_total_indicator(self):
         indicator_summary = pd.DataFrame(self.file_indicator.mean()).T
         for key, indicator in self.indicator_total.items():
+            print(indicator)
             indicator_summary[key] = np.median(indicator)
         return indicator_summary
 
-    def calc_total_indicator_each_area(self, total, which_area):
-        df = pd.DataFrame()
+    def calc_total_indicator_percentile_each_area(self):
         area_indicator = defaultdict(list)
-        for area, indicator in zip(which_area, total):
+        for area, indicator in zip(self.which_area, self.indicator_total):
             area_indicator[area].append(total)
         area_indicator50 = pd.DataFrame({area: np.median(v) for area, v in area_indicator.items()})
         return area_indicator50
@@ -223,7 +228,7 @@ def get_CA_area_weights(evaluation_point, area_info):
     
     return weights
 
-def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, ble_info):
+def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, BLE_info):
     '''
     draw trajectory on maps
 
@@ -238,10 +243,66 @@ def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, bl
     plt.imshow(map_image, extent=[0, map_size[0], 0, map_size[1]])
     plt.plot(tra_data['x_position_m'], tra_data['y_position_m'], color='red', lw=0.2, label='Trajectory')
     plt.plot(ref_point['x_position_m'], ref_point['y_position_m'], color='yellow', linestyle='None', marker='+', markersize='0.3', label='Reference')
-    plt.plot(ble_info['x_position_m'], ble_info['y_position_m'], color='orange', linestyle='None', marker='.', markersize='0.5', label='BLE')
+    plt.plot(BLE_info['x_position_m'], BLE_info['y_position_m'], color='orange', linestyle='None', marker='.', markersize='0.5', label='BLE')
     plt.title(f'{indicator_name}')
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.legend(fontsize='small')
     
     return fig
+
+def draw_CE_map(indicator_df, map_image, map_size, indicator_name):
+    '''
+    draw CE on maps
+
+    Parameters
+    ----------
+    tra_data : list of float
+    map_image : bitmap
+    map_size : float
+    '''
+    import matplotlib.cm as cm
+    import matplotlib.colors as colors
+    cmap = cm.cool
+    cmap_data = cmap(np.arange(cmap.N))
+    cmap_data[0, 3] = 0 # 0 のときのα値を0(透明)にする
+    customized_cool = colors.ListedColormap(cmap_data)
+
+    fig = plt.figure(dpi=600)
+    #ax = fig.add_subplot(111)
+    ax = fig.add_axes((0.05, 0.05, 0.8, 0.9))
+
+    ax.imshow(map_image, extent=[0, map_size[0], 0, map_size[1]])
+
+    error_map = calc_CE_map(indicator_df, map_size)
+    X, Y = np.mgrid[0:error_map.shape[0], 0:error_map.shape[1]]
+    im = ax.pcolormesh(X, Y, error_map, cmap=customized_cool)
+
+    cax = fig.add_axes((0.9, 0.15, 0.03, 0.7))
+    plt.colorbar(im, cax=cax)
+
+    ax.set_title(f'{indicator_name}_error_map')
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    
+    return fig
+
+def calc_CE_map(indicator_df, map_size, cell_size=1.0):
+    error_map_x = int(map_size[0] / cell_size)
+    error_map_y = int(map_size[1] / cell_size)
+    error_sum_map = np.zeros((error_map_x, error_map_y))
+    error_count_map = np.zeros((error_map_x, error_map_y))
+
+    def add_error(row):
+        error_x = int(row['eval_x'] / cell_size)
+        error_y = int(row['eval_y'] / cell_size)
+        error_sum_map[error_x, error_y] += row['CE']
+        error_count_map[error_x, error_y] += 1
+    
+    indicator_df.apply(add_error, axis=1)
+
+    # avoid division by zero
+    error_count_map += 1e-8
+    error_map = error_sum_map / error_count_map
+
+    return error_map

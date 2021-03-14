@@ -21,6 +21,7 @@ This tool support following indicator and requirement.
 | Requirement for Moving Velocity              | Check for trajection points velocity is within human walking speed (15 m/s) or not. The result in stdout is average velocity.|
 | Requirement for Obstacle Avoidance           | Check for trajection points on map is the area that human cannot enter or not. The result in stdout is the ratio of coordinate where obstacle exists for total corrdinates. |
 
+ALIP (Absolute Localization Inapplicable Period) : In ALIP, localization information such as BLE data cannot be used for estimation.
 
 ## Example of Evaluation Result 
 <div align="cenetr">
@@ -97,7 +98,7 @@ ground_truth_dname = 'demo_ground_truth'
 map_dname = 'PDR_Map'
 ans_dname = 'PDR_Ans'
 ref_dname = 'PDR_Ref'
-bup_dname = 'PDR_Bup'
+ALIP_dname = 'PDR_ALIP'
 
 ; File name of ground truth files for evaluation
 map_image_fname = 'Map_image.bmp'
@@ -105,11 +106,13 @@ map_size_fname = 'Map_size.csv'
 area_fname = 'Area.csv'
 ref_fname = 'PDR_Ref_No{}.csv'
 ans_fname = 'PDR_Ans_No{}.csv'
-bup_info_fname = 'PDR_Bup_info_No{}.csv'
+ALIP_info_fname = 'PDR_ALIP_info_No{}.csv'
 
 [VDR]
 ; Please write folder and file name for evaluation as [PDR]
 ```
+
+
 If you want to evaluate demo estimation files, demo groud truth configuration file is already prepared.   
 So you don't need edit configuration file, just go forward next step.
 

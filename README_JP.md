@@ -17,14 +17,14 @@
  ---                     |---                                       
 | 誤差絶対量: CE (Circular Error)                 | 正解座標データ(2次元)と時間的最近傍の軌跡の(2次元)ユークリッド距離                      |
 | 誤差分布偏移: CA (Circular Accuracy)            | 誤差XY分布の最頻値座標と誤差原点(0, 0)までの距離                                        | 
-| 誤差累積勾配: EAG (Error Accumulation Gradient) | BUP[^bup]内の評価点と時間的最近傍の座標公開点(BUP境界)との時間差に対する誤差絶対量の割合|
+| 誤差累積勾配: EAG (Error Accumulation Gradient) | ALIP内の評価点と時間的最近傍の座標公開点(ALIP境界)との時間差に対する誤差絶対量の割合|
 
 | **必要条件**           | **概要**    |
  ---                     |---                    
 | 移動速度基準: Requirement for Moving Velocity    | 測位軌跡を構成する構成点の局所的な歩行速度が歩行者速度基準閾値(1.5 m/s)以下かを確認|
 | 軌跡経路基準: Requirement for Obstacle Avoidance | 測位軌跡が歩行可能なエリアを通るかを確認|
 
-[^bup]: BUP (Bluetooth Unreachable Preriod): Bluetooth信号なしで測位を行った期間 
+ALIP (Absolute Localization Inapplicable Period): Bluetooth信号などの絶対測位なしで測位を行った期間 
 
 ## 評価結果例
 推定軌跡ごとの指標を一覧で取得することができ、  
@@ -34,8 +34,23 @@
 </div>
 
 <img src="images/error_dist.png" title="error distribution" width='500px'>
+
+誤差分布偏移の描画例。
+二次元平面上に正解位置を原点とした場合の各軌跡の分布をカーネル推定したもの。
+図中の三角形は最頻値を示す。
+
 <img src="images/CE_hist.png" title="CE histgram" width='500px'>
+
+CEのヒストグラムの描画例。
+点線は中央値を表している。
+
 <img src="images/cumsum.png" title="cumulative" width='500px'>
+
+EAGの誤差累積勾配の分布の図示例。
+
+<img src="images/CE_map.png" title="CE_map" width='500px'>
+
+地図平面上の1㎡ごとのCEの平均値をカラーメッシュによって表示。
 
 ## 必要要件
 ```
@@ -108,7 +123,7 @@ ground_truth_dname = 'demo_ground_truth'
 map_dname = 'PDR_Map'
 ans_dname = 'PDR_Ans'
 ref_dname = 'PDR_Ref'
-bup_dname = 'PDR_Bup'
+ALIP_dname = 'PDR_ALIP'
 
 ; 各評価用データのファイル名
 map_image_fname = 'Map_image.bmp'
@@ -116,11 +131,14 @@ map_size_fname = 'Map_size.csv'
 area_fname = 'Area.csv'
 ref_fname = 'PDR_Ref_No{}.csv'
 ans_fname = 'PDR_Ans_No{}.csv'
-bup_info_fname = 'PDR_Bup_info_No{}.csv'
+ALIP_info_fname = 'PDR_ALIP_info_No{}.csv'
 
 [VDR]
 ; PDRと同様にディレクトリ名・ファイル名を記載
 ```
+
+ALIPはAbsolute Localization Inapplicable Periodの略であり、
+BLE等の絶対位置データを推定に使用しない区間のことです。
 
 デモデータの評価を行いたい場合、設定ファイルが既にデモ用正解値データのフォルダ内に配置されていますので、  
 設定ファイルを用意する必要はありません。  

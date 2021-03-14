@@ -38,9 +38,9 @@ def config(track, base_dname, config_file='config.ini'):
     config_ini.read(config_file, encoding='utf-8')
     conf = dict()
 
-    ini_names ={'dir_name':['map_dname', 'ans_dname', 'ref_dname', 'ALIP_dname'],
+    ini_names ={'dir_name':['map_dname', 'ans_dname', 'ref_dname', 'ALIP_dname', 'BLE_dname'],
                 'file_name':['map_image_fname', 'map_size_fname', 'area_fname', 
-                            'ref_fname', 'ans_fname', 'ALIP_info_fname']}
+                            'ref_fname', 'ans_fname', 'ALIP_info_fname', 'BLE_info_fname']}
 
     for key, values in ini_names.items():
         for v in values:
@@ -51,6 +51,7 @@ def config(track, base_dname, config_file='config.ini'):
             conf[v] = item
             logger.debug('{}: {}'.format(v, item))
 
+    print(conf)
     logger.debug("Configuration file load complete!")
     return conf
 
@@ -194,6 +195,33 @@ def area_info(base_dname, area_fname):
             format(area_info.columns, area_info.shape))
     
     return area_info
+
+def BLE_info(base_dname, BLE_fname):
+    '''
+    BLE info files
+    
+    Parameters
+    ----------
+    base_dname : str
+    BLE_fname : str
+
+    Returns
+    -------
+    BLE_info : DataFrame
+        DataFrame columns = ['mac_address', 'orientation', 'x_position_m', 'y_position_m', 'Ptx', 'Lux']
+    '''
+    BLE_info_path = os.path.join(base_dname, BLE_fname)
+    logger.debug('Loading Area info file:{}'.format(BLE_info_path))
+    
+    try:
+        BLE_info = pd.read_csv(BLE_info_path)
+    except FileNotFoundError:
+        logger.debug('{} does not exist'.format(BLE_info_path))
+        return None
+
+    logger.debug('BLE info load complete! columns:{}'.format(BLE_info.columns))
+    
+    return BLE_info
 
 def area_weights_config(track, config_file='area_weights_config.ini'):
     '''
