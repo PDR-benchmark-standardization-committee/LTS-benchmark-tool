@@ -51,7 +51,6 @@ def config(track, base_dname, config_file='config.ini'):
             conf[v] = item
             logger.debug('{}: {}'.format(v, item))
 
-    print(conf)
     logger.debug("Configuration file load complete!")
     return conf
 

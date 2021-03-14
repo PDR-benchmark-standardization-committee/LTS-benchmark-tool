@@ -204,6 +204,12 @@ def main(args):
                 utils.create_dir(obstacle_savedir)
                 indicator_utils.save_dataframe(obstacle_savedir, f'Traj_No{tra_num}_obstacle.csv', obstacle_df)
 
+            if 'requirement_coverage' in args.indicators:
+                eval_num = len(evaluation_point)
+                corr_num = len(evaluation_indicator.extract_correspond_point(tra_data, evaluation_point))
+                coverage = corr_num / eval_num * 100
+                indicator_holder.add_indicator_percentile('requirement_coverage', coverage)
+
             logger.debug('{} Evaluation END'.format(tra_filename))
 
         # Show each file's results
@@ -286,11 +292,14 @@ if __name__ == '__main__':
     parser.add_argument('--requirement_obstacle', action='append_const', dest='indicators', default=[],
                         const='requirement_obstacle', help='Calculate requirement for obstacle avoidance')
     
+    parser.add_argument('--requirement_coverage', action='append_const', dest='indicators', default=[],
+                        const='requirement_coverage', help='Calculate requirement for coverage')
+
     parser.add_argument('--debug', action='store_const', dest='level', default=INFO, const=DEBUG, 
                         help='Logger debug mode')
 
     args = parser.parse_args()
-    args.indicators = ['CE', 'CA', 'EAG', 'requirement_velocity', 'requirement_obstacle'] if not args.indicators else args.indicators
+    args.indicators = ['CE', 'CA', 'EAG', 'requirement_velocity', 'requirement_obstacle', 'requirement_coverage'] if not args.indicators else args.indicators
     
     #　Logger setting
     logger = getLogger(__name__)
