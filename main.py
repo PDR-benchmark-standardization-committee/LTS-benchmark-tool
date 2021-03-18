@@ -122,17 +122,17 @@ def main(args):
 
             # CP
             if 'CP' in args.indicators:
-                CP = evaluation_indicator.CP_calculation(tra_data, eval_point_ALAP)
+                CP = evaluation_indicator.CP_calculation(tra_data, eval_point_ALAP, band_width=None)
                 CP_percentile = indicator_utils.calc_percentile(CP['CP'], args.CP_percentile)
-                indicator_holder.add_indicator_percentile(f'CP{args.CE_percentile}', CP_percentile)
+                indicator_holder.add_indicator_percentile(f'CP{args.CP_percentile}', CP_percentile)
 
-                indicator_holder.add_total_indicator('CP', CP)
+                indicator_holder.add_total_indicator(f'CP{args.CP_percentile}', CP['CP'])
 
                 CP_savedir = os.path.join(indicator_savedir, 'CP')
                 utils.create_dir(CP_savedir) 
 
                 indicator_utils.save_indicator(data=CP, save_dir=CP_savedir, save_filename=f'Traj_No{tra_num}_CP.csv')
-                CP_hist = indicator_utils.draw_histgram(data=CP, indicator_name='CP', percentile=args.CP_percentile)
+                CP_hist = indicator_utils.draw_histgram(data=CP['CP'], indicator_name='CP', percentile=args.CP_percentile)
                 indicator_utils.save_figure(CP_hist, save_dir=CP_savedir, save_filename=f'Traj_No{tra_num}_CP_histgram.png')
 
             # Area-weighted CA

@@ -34,7 +34,6 @@ class IndicatorHolder(object):
     def summarize_total_indicator(self):
         indicator_summary = pd.DataFrame(self.file_indicator.mean()).T
         for key, indicator in self.indicator_total.items():
-            print(indicator)
             indicator_summary[key] = np.median(indicator)
         return indicator_summary
 

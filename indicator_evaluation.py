@@ -91,7 +91,7 @@ class CalcIndicator(object):
         Returns
         -------
         CE_df : DataFrame
-            columns = ['unixtime', 'CE', 'correspond_time']
+            columns = ['unixtime', 'tra_x', 'tra_y', 'eval_x', 'eval_y', 'correspond_time', 'CE']
         '''
 
         logger.debug('Calculate Circular Error (CE) START')
@@ -102,9 +102,8 @@ class CalcIndicator(object):
             error_m_value = math.hypot(row['tra_x'] - row['eval_x'], row['tra_y'] - row['eval_y'])
             return error_m_value
         
-        logger.debug('Calculate Circular Error(CE) END')
-        
         correspond_df['CE'] = correspond_df.apply(Calc_CE, axis=1)
+        logger.debug('Calculate Circular Error(CE) END')
         return correspond_df
 
     def EAG_calculation(self, tra_point, ref_point, eval_point_ALIP):
@@ -123,7 +122,7 @@ class CalcIndicator(object):
         Returns
         -------
         EAG_df : DataFrame
-            columns = ['unixtime', 'EAG', 'delta_t', 'correspond_time']
+            columns = ['unixtime', 'tra_x', 'tra_y', 'eval_x', 'eval_y', 'correspond_time', 'EAG', 'delta_t']
 
         '''
 
@@ -141,18 +140,17 @@ class CalcIndicator(object):
         correspond_df.reset_index(drop=True, inplace=True)
         # Escape pandas SettingwithCopyWarning
         correspond_df = correspond_df.copy() 
-        correspond_df['delta_t'] =  eval_point_delta_t.values
+        correspond_df['delta_t'] = eval_point_delta_t.values
 
         def Calc_EAG(row):
             error_m_value = math.hypot(row['tra_x'] - row['eval_x'], row['tra_y'] - row['eval_y']) / row['delta_t']
             return error_m_value
 
-        logger.debug('Calculate Error Accumulation Gradient (EAG) END')
-
         correspond_df['EAG'] = correspond_df.apply(Calc_EAG, axis=1)
+        logger.debug('Calculate Error Accumulation Gradient (EAG) END')
         return correspond_df
 
-    def CP_calculation(self, tra_point, eval_point):
+    def CP_calculation(self, tra_point, eval_point, band_width=None):
         '''
         Calculate Calculate Circular Presicion(CP)
         
@@ -171,46 +169,30 @@ class CalcIndicator(object):
         '''
         logger.debug('Calculate Calculate Circular Presicion(CP) START')   
 
-        unixtime_list = []
-        correspond_time_list = []
+        correspond_df = self.extract_correspond_point(tra_point, eval_point)
 
         error_xy_series = self.calc_error_dist(tra_point, eval_point)
-        mean_error_xy = error_xy_series.mean()
+        xi, yi, zi = self.calc_kernel_density(error_xy_series['x_error'].to_list(), 
+                                                error_xy_series['y_error'].to_list(), 
+                                                bw_method=band_width)
+        x_mod, y_mod = self.calc_density_mode(xi, yi, zi)
 
         def Calc_CP(row):
-            sec_limit = 1 #match time limit(sec)
-            try:
-                diff_abs = np.abs(np.full(len(tra_point), row['unixtime']) - tra_point['unixtime'])
-                min_index = diff_abs.argmin()
+            error_x = row['tra_x'] - row['eval_x']
+            error_y = row['tra_y'] - row['eval_y']
+            error_dist_value = math.hypot(error_x - x_mod, error_y - y_mod)
+            return error_dist_value
 
-                if diff_abs[min_index] <= sec_limit:
-                    error_x = row['x_position_m'] - tra_point['x_position_m'][min_index]
-                    error_y = row['y_position_m'] - tra_point['y_position_m'][min_index]
-                    error_dist_value = math.hypot(error_x - mean_error_xy['x_error'], error_y - mean_error_xy['y_error'])
-                else: #no match
-                    error_dist_value = -1
-                
-                unixtime_list.append(row['unixtime'])
-                correspond_time_list.append(diff_abs[min_index])
-                return error_dist_value
-            
-            except ValueError:
-                return 'error'
-
-        CP_list = eval_point.apply(Calc_CP, axis=1).values
-        CP_list = [num for num in CP_list if num != 'error']
+        correspond_df['CP'] = correspond_df.apply(Calc_CP, axis=1)
         
-        logger.debug('CP:{}'.format(CP_list))
         logger.debug('Calculate Presicion Error(CP) END')
-        
-        data = pd.DataFrame({'unixtime' : unixtime_list, 'CP' : CP_list, 'correspond_time' : correspond_time_list})
-        return data
+        return correspond_df
     
     def calc_error_dist(self, tra_point, eval_point):
 
         correspond_df = self.extract_correspond_point(tra_point, eval_point)
         def error_m_xy(row):    
-            x_error, y_error = row['eval_x'] - row['tra_x'], row['eval_y'] - row['tra_y']
+            x_error, y_error = row['tra_x'] - row['eval_x'], row['tra_y'] - row['eval_y']
             return  pd.Series([x_error, y_error])
 
         result = pd.DataFrame({'x_error':[], 'y_error':[]})
@@ -299,46 +281,11 @@ class CalcIndicator(object):
 
         error_xy_series = self.calc_error_dist(tra_point, eval_point)
         
-        def calc_kernel_density(x, y, bw_method=None):
-
-            nbins=300
-            k = kde.gaussian_kde([x,y], bw_method=bw_method)
-            xi, yi = np.mgrid[min(x)-2:max(x)+2:nbins*1j, min(y)-2:max(y)+2:nbins*1j]
-            try:
-                zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-            except:
-                logger.debug('Unable to calculate inverse matrix, return mean value')
-                return np.mean(x), np.mean(y)
-            return xi, yi, zi
-        
-        def calc_density_mode(xi, yi, zi):
-            row_idx = np.argmax(zi) // len(xi)
-            col_idx = np.argmax(zi) % len(yi)
-            x_mod = xi[:, 0][row_idx].round(2)
-            y_mod = yi[0][col_idx].round(2)
-            return x_mod, y_mod
-
-        def figure_density(xi, yi, zi, x_mod, y_mod):
-            fig = plt.figure()
-            sns.set_style('whitegrid')
-            plt.rcParams['font.size'] = 12
-
-            plt.pcolormesh(xi, yi, zi.reshape(xi.shape), cmap='jet')
-            plt.plot(x_mod, y_mod, marker='^', color='forestgreen', 
-                    markerfacecolor='white', markeredgewidth=2, markersize=12)
-            plt.title('x: {:.2f} y: {:.2f}'.format(x_mod, y_mod))
-            plt.xlabel('X error')
-            plt.ylabel('Y error')
-
-            plt.close()
-            
-            return fig
-
-        xi, yi, zi = calc_kernel_density(error_xy_series['x_error'].to_list(), 
-                                        error_xy_series['y_error'].to_list(), 
-                                        bw_method=band_width)
-        x_mod, y_mod = calc_density_mode(xi, yi, zi)
-        fig = figure_density(xi, yi, zi, x_mod, y_mod)
+        xi, yi, zi = self.calc_kernel_density(error_xy_series['x_error'].to_list(), 
+                                                error_xy_series['y_error'].to_list(), 
+                                                bw_method=band_width)
+        x_mod, y_mod = self.calc_density_mode(xi, yi, zi)
+        fig = self.figure_density(xi, yi, zi, x_mod, y_mod)
 
         logger.debug('x mod: {}, y mod: {}'.format(x_mod, y_mod))
         
@@ -347,6 +294,41 @@ class CalcIndicator(object):
         logger.debug('CA: {}'.format(CA))
         
         return CA, fig
+
+    def calc_kernel_density(self, x, y, bw_method=None):
+
+        nbins=300
+        k = kde.gaussian_kde([x,y], bw_method=bw_method)
+        xi, yi = np.mgrid[min(x)-2:max(x)+2:nbins*1j, min(y)-2:max(y)+2:nbins*1j]
+        try:
+            zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+        except:
+            logger.debug('Unable to calculate inverse matrix, return mean value')
+            return np.mean(x), np.mean(y)
+        return xi, yi, zi
+    
+    def calc_density_mode(self, xi, yi, zi):
+        row_idx = np.argmax(zi) // len(xi)
+        col_idx = np.argmax(zi) % len(yi)
+        x_mod = xi[:, 0][row_idx].round(2)
+        y_mod = yi[0][col_idx].round(2)
+        return x_mod, y_mod
+
+    def figure_density(self, xi, yi, zi, x_mod, y_mod):
+        fig = plt.figure()
+        sns.set_style('whitegrid')
+        plt.rcParams['font.size'] = 12
+
+        plt.pcolormesh(xi, yi, zi.reshape(xi.shape), cmap='jet')
+        plt.plot(x_mod, y_mod, marker='^', color='forestgreen', 
+                markerfacecolor='white', markeredgewidth=2, markersize=12)
+        plt.title('x: {:.2f} y: {:.2f}'.format(x_mod, y_mod))
+        plt.xlabel('X error')
+        plt.ylabel('Y error')
+
+        plt.close()
+        
+        return fig
 
     def Area_weighted_CA_calculation(self, tra_point, eval_point, area_info, 
                                     area_weights, use_2d_hist=False, band_width=None):
