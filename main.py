@@ -99,7 +99,9 @@ def main(args):
             """
 
             traj_map = indicator_utils.draw_trajectory(tra_data, map_image, map_size, 'Trajectry', ref_point, BLE_info)
-            indicator_utils.save_figure(traj_map, save_dir=indicator_savedir, save_filename=f'Traj_No{tra_num}.png')
+            tra_savedir = os.path.join(indicator_savedir, 'Trajectory')
+            utils.create_dir(tra_savedir)
+            indicator_utils.save_figure(traj_map, save_dir=tra_savedir, save_filename=f'Traj_No{tra_num}.png')
 
             # CE
             if 'CE' in args.indicators:

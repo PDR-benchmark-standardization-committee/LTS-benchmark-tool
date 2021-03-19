@@ -239,7 +239,7 @@ def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, BL
     '''
 
     fig = plt.figure(dpi=600)
-    plt.imshow(map_image, extent=[0, map_size[0], 0, map_size[1]])
+    plt.imshow(map_image, extent=[0, map_size[0], 0, map_size[1]], cmap='gist_gray')
     plt.plot(tra_data['x_position_m'], tra_data['y_position_m'], color='red', lw=0.2, label='Trajectory')
     plt.plot(ref_point['x_position_m'], ref_point['y_position_m'], color='yellow', linestyle='None', marker='+', markersize='0.3', label='Reference')
     plt.plot(BLE_info['x_position_m'], BLE_info['y_position_m'], color='orange', linestyle='None', marker='.', markersize='0.5', label='BLE')
