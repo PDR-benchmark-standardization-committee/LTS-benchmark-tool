@@ -85,6 +85,15 @@ If you want to evaluate demo estimation files, you don't need to prepare estimat
     ├ requirements.txt
     └ README.md
 ```
+
+The trajectry file contains positions of employees or folklifts at each time.
+
+The data format is as follows:
+
+0. Datetime (unixtime: second)
+1. Position x (in meter)
+2. Position y (in meter)
+
 ### Step.3 Place directory structure configuration 
 You need to prepare configuration file that correspond to ground truth folder to evaluate.  
 If you want to use your own groud truth file, please edit [demo_ground_truth/demo_data_config.ini] and place at groud truth folder.  
@@ -112,9 +121,36 @@ ALIP_info_fname = 'PDR_ALIP_info_No{}.csv'
 ; Please write folder and file name for evaluation as [PDR]
 ```
 
+#### About Map_size file
+Size of target area in meter.  
+X-length and Y-length are described in meter.  
+Left bottom corner of the map is the origin of the map.
 
-If you want to evaluate demo estimation files, demo groud truth configuration file is already prepared.   
-So you don't need edit configuration file, just go forward next step.
+#### About Area file
+If you want to evaluate the trajectory for each divided area, specify the area in this file.  
+Enter the area number, the center coordinates of the area, 
+and the vertical and horizontal lengths of the area on one line.
+
+#### About Ref file
+The file contains positions of employees or folklifts at each time.  
+This data is used for trajectory estimation.  
+The data format is the same as trajectory file
+
+#### About Ans file
+The file contains positions of employees or folklifts at each time.  
+This data is not used for trajectory estimation.  
+The data format is the same as trajectory file.
+
+#### About ALIP_info file
+ALIP stands for Absolute Localization Inapplicable Period. Previsouly we call this as BUP (BLE unreachable period).
+In this period, BLE information is deleted from Sensor data.
+
+The data format is as follows:
+
+0. Start time of ALIP in Unixtime
+1. End time of the ALIP in Unixtime
+
+This is repeated for the number of ALIPs
 
 ### Step.4 Evaluation
 
