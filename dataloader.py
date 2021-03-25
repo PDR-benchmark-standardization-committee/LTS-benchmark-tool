@@ -40,7 +40,10 @@ def config(track, base_dname, config_file='config.ini'):
 
     ini_names ={'dir_name':['map_dname', 'ans_dname', 'ref_dname', 'ALIP_dname', 'BLE_dname'],
                 'file_name':['map_image_fname', 'map_size_fname', 'area_fname', 
-                            'ref_fname', 'ans_fname', 'ALIP_info_fname', 'BLE_info_fname']}
+                            'ref_fname', 'ans_fname', 'ALIP_info_fname', 'BLE_info_fname'],
+                'map_color':['map_obstacle_color', 'map_trajectory_color', 'map_ref_color', 
+                'map_BLE_color'],
+                'map_makersize':['map_trajectory_size', 'map_ref_size', 'map_BLE_size', 'map_grid']}
 
     for key, values in ini_names.items():
         for v in values:
@@ -316,4 +319,49 @@ def filter_evaluation_data_ALIP(evaluation_point, ALIP_info, ALIP_flag):
         logger.debug('evaluation point OUT OF ALIP period is selected')
     
     return eval_point
+
+def map_color(map_obstacle_color, map_trajectory_color, map_ref_color, map_BLE_color):
+    '''
+    Load map color
+
+    Parameters
+    ----------
+    map_obstacle_color : str
+    map_trajectory_color : str
+    map_ref_color : str
+    map_BLE_color : str
+
+    Returns
+    -------
+    map_color : list
+    '''
+    
+    map_color = [map_obstacle_color, map_trajectory_color, map_ref_color, map_BLE_color]
+    
+    return map_color
+
+def map_makersize(map_trajectory_size, map_ref_size, map_BLE_size, map_grid):
+    '''
+    Load map color
+
+    Parameters
+    ----------
+    map_obstacle_color : str
+    map_trajectory_color : str
+    map_ref_color : str
+    map_BLE_color : str
+
+    Returns
+    -------
+    map_color : list
+    '''
+    
+    if map_grid is 'True':
+        map_grid = True
+    else:
+        map_grid = False
+    
+    map_makersize = [map_trajectory_size, map_ref_size, map_BLE_size, map_grid]
+
+    return map_makersize
 

@@ -38,6 +38,8 @@ def main(args):
         map_image = dataloader.map_image(conf['map_dname'], conf['map_image_fname'])    
         area_info = dataloader.area_info(conf['map_dname'], conf['area_fname'])     
         BLE_info = dataloader.BLE_info(conf['BLE_dname'], conf['BLE_info_fname'])     
+        map_color = dataloader.map_color(conf['map_obstacle_color'], conf['map_trajectory_color'], conf['map_ref_color'], conf['map_BLE_color'])
+        map_makersize = dataloader.map_makersize(conf['map_trajectory_size'], conf['map_ref_size'], conf['map_BLE_size'], conf['map_grid'])
 
         # Create result save directory
         if args.save_folder:
@@ -97,11 +99,6 @@ def main(args):
                 which_area = indicator_utils.area_of_ans(eval_point_ALIP, area_info)
                 which_area_all.extend(which_area)
             """
-
-            traj_map = indicator_utils.draw_trajectory(tra_data, map_image, map_size, 'Trajectry', ref_point, BLE_info)
-            tra_savedir = os.path.join(indicator_savedir, 'Trajectory')
-            utils.create_dir(tra_savedir)
-            indicator_utils.save_figure(traj_map, save_dir=tra_savedir, save_filename=f'Traj_No{tra_num}.png')
 
             # CE
             if 'CE' in args.indicators:
@@ -213,6 +210,12 @@ def main(args):
                 indicator_holder.add_indicator_percentile('requirement_coverage', coverage)
 
             logger.debug('{} Evaluation END'.format(tra_filename))
+
+            # Draw trajectory
+            Tra_savedir = os.path.join(indicator_savedir, 'Trajectory')
+            utils.create_dir(Tra_savedir)
+            Trajectory_image = indicator_utils.draw_trajectory(tra_data, map_image, map_size, f'Trajectory_No{tra_num}', ref_point, BLE_info, map_color, map_makersize)
+            indicator_utils.save_figure(Trajectory_image, save_dir=Tra_savedir, save_filename=f'Tra_No{tra_num}.png')
 
         # Show each file's results
         file_indicator_summary = indicator_holder.summarize_file_indicator()
