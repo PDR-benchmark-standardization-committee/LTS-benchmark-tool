@@ -220,5 +220,6 @@ def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, bl
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.legend(fontsize='small')
+    plt.grid(map_makersize[3])
     
     return fig
