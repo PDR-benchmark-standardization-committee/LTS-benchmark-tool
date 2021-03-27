@@ -21,6 +21,7 @@ This tool support following indicator and requirement.
 | Requirement for Moving Velocity              | Check for trajection points velocity is within human walking speed (15 m/s) or not. The result in stdout is average velocity.|
 | Requirement for Obstacle Avoidance           | Check for trajection points on map is the area that human cannot enter or not. The result in stdout is the ratio of coordinate where obstacle exists for total corrdinates. |
 
+ALIP (Absolute Localization Inapplicable Period) : In ALIP, localization information such as BLE data cannot be used for estimation.
 
 ## Example of Evaluation Result 
 <div align="cenetr">
@@ -84,6 +85,15 @@ If you want to evaluate demo estimation files, you don't need to prepare estimat
     ├ requirements.txt
     └ README.md
 ```
+
+The trajectry file contains positions of employees or folklifts at each time.
+
+The data format is as follows:
+
+0. Datetime (unixtime: second)
+1. Position x (in meter)
+2. Position y (in meter)
+
 ### Step.3 Place directory structure configuration 
 You need to prepare configuration file that correspond to ground truth folder to evaluate.  
 If you want to use your own groud truth file, please edit [demo_ground_truth/demo_data_config.ini] and place at groud truth folder.  
@@ -97,7 +107,7 @@ ground_truth_dname = 'demo_ground_truth'
 map_dname = 'PDR_Map'
 ans_dname = 'PDR_Ans'
 ref_dname = 'PDR_Ref'
-bup_dname = 'PDR_Bup'
+ALIP_dname = 'PDR_ALIP'
 
 ; File name of ground truth files for evaluation
 map_image_fname = 'Map_image.bmp'
@@ -105,13 +115,42 @@ map_size_fname = 'Map_size.csv'
 area_fname = 'Area.csv'
 ref_fname = 'PDR_Ref_No{}.csv'
 ans_fname = 'PDR_Ans_No{}.csv'
-bup_info_fname = 'PDR_Bup_info_No{}.csv'
+ALIP_info_fname = 'PDR_ALIP_info_No{}.csv'
 
 [VDR]
 ; Please write folder and file name for evaluation as [PDR]
 ```
-If you want to evaluate demo estimation files, demo groud truth configuration file is already prepared.   
-So you don't need edit configuration file, just go forward next step.
+
+#### About Map_size file
+Size of target area in meter.  
+X-length and Y-length are described in meter.  
+Left bottom corner of the map is the origin of the map.
+
+#### About Area file
+If you want to evaluate the trajectory for each divided area, specify the area in this file.  
+Enter the area number, the center coordinates of the area, 
+and the vertical and horizontal lengths of the area on one line.
+
+#### About Ref file
+The file contains positions of employees or folklifts at each time.  
+This data is used for trajectory estimation.  
+The data format is the same as trajectory file
+
+#### About Ans file
+The file contains positions of employees or folklifts at each time.  
+This data is not used for trajectory estimation.  
+The data format is the same as trajectory file.
+
+#### About ALIP_info file
+ALIP stands for Absolute Localization Inapplicable Period. Previsouly we call this as BUP (BLE unreachable period).
+In this period, BLE information is deleted from Sensor data.
+
+The data format is as follows:
+
+0. Start time of ALIP in Unixtime
+1. End time of the ALIP in Unixtime
+
+This is repeated for the number of ALIPs
 
 ### Step.4 Evaluation
 

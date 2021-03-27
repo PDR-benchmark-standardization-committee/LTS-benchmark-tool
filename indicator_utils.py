@@ -14,22 +14,39 @@ logger = getLogger("__main__").getChild("indicator utility")
 class IndicatorHolder(object):
     def __init__(self): 
         self.indicator_values = defaultdict(list)
+        self.indicator_total = defaultdict(pd.Series)
+        self.which_area = pd.DataFrame()
         self.file_indicator = None
 
-    def add_indicator(self, indicator_name, indicator):
+    def add_indicator_percentile(self, indicator_name, indicator):
         self.indicator_values[indicator_name].append(indicator)
         
+    def add_total_indicator(self, indicator_name, indicator_series):
+        self.indicator_total[indicator_name] = pd.concat([self.indicator_total[indicator_name],
+                                                          indicator_series], axis=0)
+
+    def add_total_area_info(self, which_area_info):
+        self.which_area = pd.concat([self.which_area, which_area_info], axis=0)
+
     def summarize_file_indicator(self):
         self.file_indicator = pd.DataFrame(self.indicator_values)
         return self.file_indicator
 
-    def calc_total_indicator(self, CE_total, EAG_total):
-        total_indicator = pd.DataFrame(self.file_indicator.mean()).T
-        total_indicator['CE50'] = np.median(CE_total)
-        total_indicator['EAG50'] = np.median(EAG_total)
-        return total_indicator
+    def summarize_total_indicator(self):
+        indicator_summary = pd.DataFrame(self.file_indicator.mean()).T
+        for key, indicator in self.indicator_total.items():
+            indicator_summary[key] = np.median(indicator)
+        return indicator_summary
 
-def save_indicator(data, indicator_name, save_dir, save_filename):
+    def calc_total_indicator_percentile_each_area(self):
+        area_indicator = defaultdict(list)
+        for area, indicator in zip(self.which_area, self.indicator_total):
+            area_indicator[area].append(total)
+        area_indicator50 = pd.DataFrame({area: np.median(v) for area, v in area_indicator.items()})
+        return area_indicator50
+
+
+def save_indicator(data, save_dir, save_filename):
     '''
     save CE, EAG as csv
 
@@ -40,25 +57,37 @@ def save_indicator(data, indicator_name, save_dir, save_filename):
     '''
     
     indicator_save_path = os.path.join(save_dir, save_filename)
-
-    save_df = pd.DataFrame({indicator_name : data})
-    save_df.to_csv(indicator_save_path, index=False)
-    logger.debug('save {} at {}'.format(indicator_name, indicator_save_path))
-
-def save_indicator_debug(data, save_dir, save_filename):
-    '''
-    save CE, EAG as csv
-
-    Paramters
-    ---------
-    data : list of float
-    save_filename : str
-    '''
-    
-    indicator_save_path = os.path.join(save_dir, save_filename)
-
     data.to_csv(indicator_save_path, index=False)
 
+def area_of_ans(ans_point, area_info):
+    '''
+    Fucntion to classify each rows of ans_point to area_num
+
+    Parameters
+    ----------
+    ans_point : pd.DataFrame
+    area_info : pd.DataFrame
+
+    Returns
+    -------
+    which_area_series : pd.Series
+        number of area
+    '''
+    def get_area(row):
+        for area_num in range(1, len(area_info)+1):
+            target_area_info = area_info[area_info['area']==area_num] 
+            x_min = target_area_info['x_position_m'] - target_area_info['x_length']
+            x_max = target_area_info['x_position_m'] + target_area_info['x_length']
+            y_min = target_area_info['y_position_m'] - target_area_info['y_length']
+            y_max = target_area_info['y_position_m'] + target_area_info['y_length']
+
+            if x_min.values[0] <= row['x_position_m'] <= x_max.values[0] \
+                and y_min.values[0] <= row['y_position_m'] <= y_max.values[0]:
+                return area_num
+        return 0
+    which_area_series = ans_point.apply(get_area, axis=1)
+    return which_area_series 
+    
 def draw_cumulative_sum(data, indicator_name):
     '''
     draw cumulative sum of EAG and CE
@@ -199,7 +228,7 @@ def get_CA_area_weights(evaluation_point, area_info):
     
     return weights
 
-def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, ble_info, map_color, map_makersize):
+def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, BLE_info, map_color, map_makersize):
     '''
     draw trajectory on maps
 
@@ -215,7 +244,7 @@ def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, bl
     plt.imshow(map_image2, cmap=map_color[0], extent=[0, map_size[0], 0, map_size[1]])
     plt.plot(tra_data['x_position_m'], tra_data['y_position_m'], color=map_color[1], lw=map_makersize[0], label='Trajectory')
     plt.plot(ref_point['x_position_m'], ref_point['y_position_m'], color=map_color[2], linestyle='None', marker='+', markersize=map_makersize[1], label='Reference')
-    plt.plot(ble_info['x_position_m'], ble_info['y_position_m'], color=map_color[3], linestyle='None', marker='.', markersize=map_makersize[2], label='BLE')
+    plt.plot(BLE_info['x_position_m'], BLE_info['y_position_m'], color=map_color[3], linestyle='None', marker='.', markersize=map_makersize[2], label='BLE')
     plt.title(f'{indicator_name}')
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
@@ -223,3 +252,59 @@ def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, bl
     plt.grid(map_makersize[3])
     
     return fig
+
+def draw_CE_map(indicator_df, map_image, map_size, indicator_name):
+    '''
+    draw CE on maps
+
+    Parameters
+    ----------
+    tra_data : list of float
+    map_image : bitmap
+    map_size : float
+    '''
+    import matplotlib.cm as cm
+    import matplotlib.colors as colors
+    cmap = cm.cool
+    cmap_data = cmap(np.arange(cmap.N))
+    cmap_data[0, 3] = 0 # 0 のときのα値を0(透明)にする
+    customized_cool = colors.ListedColormap(cmap_data)
+
+    fig = plt.figure(dpi=600)
+    #ax = fig.add_subplot(111)
+    ax = fig.add_axes((0.05, 0.05, 0.8, 0.9))
+
+    ax.imshow(map_image, extent=[0, map_size[0], 0, map_size[1]])
+
+    error_map = calc_CE_map(indicator_df, map_size)
+    X, Y = np.mgrid[0:error_map.shape[0], 0:error_map.shape[1]]
+    im = ax.pcolormesh(X, Y, error_map, cmap=customized_cool)
+
+    cax = fig.add_axes((0.9, 0.15, 0.03, 0.7))
+    plt.colorbar(im, cax=cax)
+
+    ax.set_title(f'{indicator_name}_error_map')
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    
+    return fig
+
+def calc_CE_map(indicator_df, map_size, cell_size=1.0):
+    error_map_x = int(map_size[0] / cell_size)
+    error_map_y = int(map_size[1] / cell_size)
+    error_sum_map = np.zeros((error_map_x, error_map_y))
+    error_count_map = np.zeros((error_map_x, error_map_y))
+
+    def add_error(row):
+        error_x = int(row['eval_x'] / cell_size)
+        error_y = int(row['eval_y'] / cell_size)
+        error_sum_map[error_x, error_y] += row['CE']
+        error_count_map[error_x, error_y] += 1
+    
+    indicator_df.apply(add_error, axis=1)
+
+    # avoid division by zero
+    error_count_map += 1e-8
+    error_map = error_sum_map / error_count_map
+
+    return error_map
