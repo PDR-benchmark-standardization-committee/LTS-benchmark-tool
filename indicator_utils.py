@@ -1,6 +1,7 @@
 # coding: utf-8
 import os 
 
+import cv2
 from collections import defaultdict
 import pandas as pd
 import numpy as np
@@ -198,7 +199,7 @@ def get_CA_area_weights(evaluation_point, area_info):
     
     return weights
 
-def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, ble_info):
+def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, ble_info, map_color, map_makersize):
     '''
     draw trajectory on maps
 
@@ -210,10 +211,11 @@ def draw_trajectory(tra_data, map_image, map_size, indicator_name, ref_point, bl
     '''
 
     fig = plt.figure(dpi=600)
-    plt.imshow(map_image, extent=[0, map_size[0], 0, map_size[1]])
-    plt.plot(tra_data['x_position_m'], tra_data['y_position_m'], color='red', lw=0.2, label='Trajectory')
-    plt.plot(ref_point['x_position_m'], ref_point['y_position_m'], color='yellow', linestyle='None', marker='+', markersize='0.3', label='Reference')
-    plt.plot(ble_info['x_position_m'], ble_info['y_position_m'], color='orange', linestyle='None', marker='.', markersize='0.5', label='BLE')
+    map_image2 = cv2.bitwise_not(map_image)
+    plt.imshow(map_image2, cmap=map_color[0], extent=[0, map_size[0], 0, map_size[1]])
+    plt.plot(tra_data['x_position_m'], tra_data['y_position_m'], color=map_color[1], lw=map_makersize[0], label='Trajectory')
+    plt.plot(ref_point['x_position_m'], ref_point['y_position_m'], color=map_color[2], linestyle='None', marker='+', markersize=map_makersize[1], label='Reference')
+    plt.plot(ble_info['x_position_m'], ble_info['y_position_m'], color=map_color[3], linestyle='None', marker='.', markersize=map_makersize[2], label='BLE')
     plt.title(f'{indicator_name}')
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
