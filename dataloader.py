@@ -38,9 +38,12 @@ def config(track, config_file='config.ini'):
     config_ini.read(config_file, encoding='utf-8')
     conf = dict()
 
-    ini_names ={'dir_name':['map_dname', 'ans_dname', 'ref_dname', 'bup_dname'],
+    ini_names ={'dir_name':['map_dname', 'ans_dname', 'ref_dname', 'ALIP_dname'],
                 'file_name':['map_image_fname', 'map_size_fname', 'area_fname', 
-                            'ref_fname', 'ans_fname', 'bup_info_fname']}
+                'ref_fname', 'ans_fname', 'ALIP_info_fname'],
+                'map_color':['map_obstacle_color', 'map_trajectory_color', 'map_ref_color', 
+                'map_BLE_color'],
+                'map_makersize':['map_trajectory_size', 'map_ref_size', 'map_BLE_size', 'map_grid']}
 
     ground_truth_dname = config_ini['ANSWER']['ground_truth_dname'].strip("'")
     
@@ -139,34 +142,34 @@ def load_point(base_dname, point_fname):
     
     return point
 
-def bup_info(base_dname, bup_info_fname):
+def ALIP_info(base_dname, ALIP_info_fname):
     '''
-    Load true bup info file
+    Load true ALIP info file
 
     Parameters
     ----------
     base_dname : str
-    bup_info_fname : str
+    ALIP_info_fname : str
     
     Returns
     -------
-    bup_info : DataFrame
-        columns = ['bup_start', 'bup_end']
+    ALIP_info : DataFrame
+        columns = ['ALIP_start', 'ALIP_end']
     '''
-    bup_info_path = os.path.join(base_dname, bup_info_fname)
-    logger.debug('Loading BUP info :{}'.format(bup_info_path))
+    ALIP_info_path = os.path.join(base_dname, ALIP_info_fname)
+    logger.debug('Loading ALIP info :{}'.format(ALIP_info_path))
 
     try:
-        bup_info = pd.read_csv(bup_info_path)
+        ALIP_info = pd.read_csv(ALIP_info_path)
     except FileNotFoundError:
-        logger.debug('{} does not exist'.format(bup_info_path))
+        logger.debug('{} does not exist'.format(ALIP_info_path))
         return None
     
-    bup_info.columns = ['bup_start', 'bup_end']
+    ALIP_info.columns = ['ALIP_start', 'ALIP_end']
 
-    logger.debug('BUP info load complete! columns:{}, shape:{}'.\
-            format(bup_info.columns, bup_info.shape))
-    return bup_info
+    logger.debug('ALIP info load complete! columns:{}, shape:{}'.\
+            format(ALIP_info.columns, ALIP_info.shape))
+    return ALIP_info
 
 def area_info(base_dname, area_fname):
     '''
@@ -256,41 +259,82 @@ def drop_ans_duplicated_with_ref(ans_point, ref_point):
 
     return ans_ref_nonduplicated
 
-def filter_evaluation_data_between_bup(evaluation_point, bup_info, bup_flag):
+def filter_evaluation_data_between_ALIP(evaluation_point, ALIP_info, ALIP_flag):
     '''
-    Filter data between bup or not
+    Filter data between ALIP or not
 
     Parameters
     ----------
     evaluation_point: DataFrame
         DataFrame columns = ['unixtime', 'x_position_m', 'y_position_m']
-    bup_info : DataFrame
-        bup period time information
-    bup_flag : boolean
-        filter point is between bup or not
+    ALIP_info : DataFrame
+        ALIP period time information
+    ALIP_flag : boolean
+        filter point is between ALIP or not
 
     Returns
     -------
     eval_point : DataFrame
         evaluation point for indicator
     '''
-    # Check weather unixtime is between start and end time of bup_info
-    def is_unixtime_between_bup(x):
-        for bup_start, bup_end in zip(bup_info['bup_start'].values, bup_info['bup_end'].values):
-            if bup_start<= x <=bup_end:
+    # Check weather unixtime is between start and end time of ALIP_info
+    def is_unixtime_between_ALIP(x):
+        for ALIP_start, ALIP_end in zip(ALIP_info['ALIP_start'].values, ALIP_info['ALIP_end'].values):
+            if ALIP_start<= x <=ALIP_end:
                 return True
         return False
     
-    if bup_flag:
+    if ALIP_flag:
         # Boolean array
-        is_unixtime_between_bupinfo = evaluation_point['unixtime'].apply(lambda x:is_unixtime_between_bup(x))
-        eval_point = evaluation_point[is_unixtime_between_bupinfo]
-        logger.debug('evaluation point BETWEEN bup period is selected')
+        is_unixtime_between_ALIPinfo = evaluation_point['unixtime'].apply(lambda x:is_unixtime_between_ALIP(x))
+        eval_point = evaluation_point[is_unixtime_between_ALIPinfo]
+        logger.debug('evaluation point BETWEEN ALIP period is selected')
 
     else:
-        is_unixtime_out_of_bupinfo = [not i for i in evaluation_point['unixtime'].apply(lambda x:is_unixtime_between_bup(x))]
-        eval_point = evaluation_point[is_unixtime_out_of_bupinfo]
-        logger.debug('evaluation point OUT OF bup period is selected')
+        is_unixtime_out_of_ALIPinfo = [not i for i in evaluation_point['unixtime'].apply(lambda x:is_unixtime_between_ALIP(x))]
+        eval_point = evaluation_point[is_unixtime_out_of_ALIPinfo]
+        logger.debug('evaluation point OUT OF ALIP period is selected')
     
     return eval_point
 
+def map_color(map_obstacle_color, map_trajectory_color, map_ref_color, map_BLE_color):
+    '''
+    Load map color
+    Parameters
+    ----------
+    map_obstacle_color : str
+    map_trajectory_color : str
+    map_ref_color : str
+    map_BLE_color : str
+    Returns
+    -------
+    map_color : list
+    '''
+    
+    map_color = [map_obstacle_color, map_trajectory_color, map_ref_color, map_BLE_color]
+    
+    return map_color
+
+def map_makersize(map_trajectory_size, map_ref_size, map_BLE_size, map_grid):
+    '''
+    Load map color
+    Parameters
+    ----------
+    map_obstacle_color : str
+    map_trajectory_color : str
+    map_ref_color : str
+    map_BLE_color : str
+    map_grid : str
+    Returns
+    -------
+    map_makersize : list
+    '''
+
+    if map_grid is 'True':
+        map_grid = True
+    else:
+        map_grid = False
+    
+    map_makersize = [map_trajectory_size, map_ref_size, map_BLE_size, map_grid]
+
+    return map_makersize
