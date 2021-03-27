@@ -17,14 +17,14 @@
  ---                     |---                                       
 | 誤差絶対量: CE (Circular Error)                 | 正解座標データ(2次元)と時間的最近傍の軌跡の(2次元)ユークリッド距離                      |
 | 誤差分布偏移: CA (Circular Accuracy)            | 誤差XY分布の最頻値座標と誤差原点(0, 0)までの距離                                        | 
-| 誤差累積勾配: EAG (Error Accumulation Gradient) | BUP[^bup]内の評価点と時間的最近傍の座標公開点(BUP境界)との時間差に対する誤差絶対量の割合|
+| 誤差累積勾配: EAG (Error Accumulation Gradient) | ALIP内の評価点と時間的最近傍の座標公開点(ALIP境界)との時間差に対する誤差絶対量の割合|
 
 | **必要条件**           | **概要**    |
  ---                     |---                    
 | 移動速度基準: Requirement for Moving Velocity    | 測位軌跡を構成する構成点の局所的な歩行速度が歩行者速度基準閾値(1.5 m/s)以下かを確認|
 | 軌跡経路基準: Requirement for Obstacle Avoidance | 測位軌跡が歩行可能なエリアを通るかを確認|
 
-[^bup]: BUP (Bluetooth Unreachable Preriod): Bluetooth信号なしで測位を行った期間 
+ALIP (Absolute-Localization Inapplicable Period): Bluetooth信号なしで測位を行った期間 
 
 ## 評価結果例
 推定軌跡ごとの指標を一覧で取得することができ、  
@@ -71,16 +71,55 @@ pip install -r requirements.txt
 ```
 
 ### Step.2 推定ファイルを配置
-PDR, VDRの推定軌跡ファイルをそれぞれ[**estimatiion_folder**]/PDR, [**estimation_folder**]/VDRに配置してください。  
+PDR, VDRの推定軌跡ファイルをそれぞれ[estimatiion_folder]/PDR, [estimation_folder]/VDRに配置してください。  
 デモデータの評価を行いたい場合、ご自身の推定軌跡ファイルを用意する必要はありません。  
 ```
 LTS-benchmark-tool/
-    ├ estimation_folder (demo_estimation)/
-    │       └ VDR/[**VDR esimation files**]
-    │       └ PDR/[**PDR estimation files**]
+    ├ estimation_folder/
+    │       └ VDR/
+    |         └ VDR_Traj_No*.txt [**VDR estimation files**]
+    │       └ PDR/
+    |         └ PDR_Traj_No*.txt [**PDR estimation files**]
     │
-    ├ groud_truth_folder (demo_ground_truth)/
-    │       └ [**data config ini file**]
+    ├ groud_truth_folder/
+    |       ├ BLE_Beacon/
+    |       |  └ BLE_info.csv
+    |       |
+    |       ├ VDR_ALIP/
+    |       |  └ VDR_ALIP_info_No*.csv
+    |       |
+    |       ├ VDR_Ans/
+    |       |  └ VDR_Ans_No*.csv
+    |       |
+    |       ├ VDR_Map/
+    |       |  ├ Map_image.bmp
+    |       |  ├ Map_size.csv
+    |       |  └ VDR_Area.csv
+    |       |
+    |       ├ VDR_Module/
+    |       |  └ VDR_Sens_No*.txt
+    |       |
+    |       ├ VDR_Ref/
+    |       |  └ VDR_Ref_No*.csv
+    |       |
+    |       ├ PDR_ALIP/
+    |       |  └ PDR_ALIP_info_No*.csv
+    |       |
+    |       ├ PDR_Ans/
+    |       |  └ PDR_Ans_No*.csv
+    |       |
+    |       ├ PDR_Map/
+    |       |  ├ Map_image.bmp
+    |       |  ├ Map_size.csv
+    |       |  └ PDR_Area.csv
+    |       |
+    |       ├ PDR_Module/
+    |       |  └ PDR_Sens_No*.txt
+    |       |
+    |       ├ PDR_Ref/
+    |       |  └ PDR_Ref_No*.csv
+    |       |
+    │       └ data_config.ini
     │
     ├ main.py
     ├ indicator_evaluation.py
@@ -91,32 +130,51 @@ LTS-benchmark-tool/
     ├ requirements.txt
     └ README.md
 ```
+#### VDR_Traj_No*.txt, PDR_Traj_No*.txtの構成
+軌跡ファイルの中身はカンマ区切りで以下のような構成となります。  
+※軌跡ファイル内にヘッダーは含みません。  
+| unixtime | x[m] | y[m] |
+|---       |---   |---   |
 
 ### Step.3 正解値データのディレクリ構造を記載した設定ファイルを用意
 正解データを読み込むために、正解値データのディレクトリ名、  
 ファイル名を記載した設定ファイルを準備する必要があります。  
-ご自身の用意した正解データを利用する際は、demo_ground_truthのフォルダにあるdemo_data_config.iniファイルを  
+ご自身の用意した正解データを利用する際は、ground_truth_folderのフォルダにあるdata_config.iniファイルを  
 ご自身の正解データに合わせて修正し、正解データのディレクトリに配置してください。  
 以下のような設定ファイルをご自身の正解値データに合わせて作成してください。  
 ```
 ; 正解値データフォルダ名
 [ANSWER]
-ground_truth_dname = 'demo_ground_truth'
+ground_truth_dname = 'groud_truth_folder'
 
 [PDR]
 ; 各評価用データのディレクトリ名
 map_dname = 'PDR_Map'
 ans_dname = 'PDR_Ans'
 ref_dname = 'PDR_Ref'
-bup_dname = 'PDR_Bup'
+ALIP_dname = 'PDR_ALIP'
+BLE_dname = 'BLE_Beacon'
 
 ; 各評価用データのファイル名
 map_image_fname = 'Map_image.bmp'
 map_size_fname = 'Map_size.csv'
-area_fname = 'Area.csv'
+area_fname = 'PDR_Area.csv'
 ref_fname = 'PDR_Ref_No{}.csv'
 ans_fname = 'PDR_Ans_No{}.csv'
-bup_info_fname = 'PDR_Bup_info_No{}.csv'
+ALIP_info_fname = 'PDR_ALIP_info_No{}.csv'
+BLE_info_fname = 'BLE_info.csv'
+
+; 描画軌跡の色設定
+map_obstacle_color = 'gray'
+map_trajectory_color = 'green'
+map_ref_color = 'orange'
+map_ble_color = 'blue'
+
+; 描画軌跡の表示サイズ設定
+map_trajectory_size = '0.2'
+map_ref_size = '0.3'
+map_ble_size = '2'
+map_grid = 'False'
 
 [VDR]
 ; PDRと同様にディレクトリ名・ファイル名を記載
@@ -133,21 +191,50 @@ python main.py [estimation_path] [ground_truth_path]
 ```
 デモデータの評価を実行したい場合は、以下のスクリプトを実行してください
 ```
-python main.py demo_estimation demo_ground_truth
+python main.py estimation_folder groud_truth_folder
 ```
 
 指標と必要条件の評価結果が推定軌跡のフォルダ内に保存されます。  
 デモデータの評価を行った場合、以下のパスに結果が保存されます。
 ```
-demo_estimation/
-  └ VDR/
-    └ results/
-       └ indicator/
-          ├ CE
-          ├ CA
-          ├ EGG
-          ├ requirement_velocity
-          └ requirement_obstacle
+estimation_folder/
+  | VDR/
+  | └ result/
+  |    └ indicator
+  |      ├ CA
+  |      | ├ Traj_No*_area*_CA.png
+  |      | └ Traj_No*_CA.csv
+  |      |
+  |      ├ CE
+  |      | ├ CE_total_cumulative_sum.csv
+  |      | ├ CE_total_cumulative_sum.png
+  |      | ├ CE_total_histgram.png
+  |      | ├ Traj_No*_CE.csv
+  |      | ├ Traj_No*_CE_debug.csv
+  |      | └ Traj_No*_CE_histgram.png
+  |      |
+  |      ├ EAG
+  |      | ├ EAG_total_cumulative_sum.csv
+  |      | ├ EAG_total_cumulative_sum.png
+  |      | ├ EAG_total_histgram.png
+  |      | ├ Traj_No*_EAG.csv
+  |      | ├ Traj_No*_EAG_debug.csv
+  |      | └ Traj_No*_EAG_histgram.png
+  |      |
+  |      ├ requirement_obstacle
+  |      | └ Traj_No*_obstacle.csv
+  |      |
+  |      ├ requirement_velocity
+  |      | └ Traj_No*_moving_velocity.csv
+  |      |
+  |      ├ Trajectory
+  |      | └ Tra_No*.png
+  |      |
+  |      ├ file_indicator.csv
+  |      └ total_indicator.csv
+  | 
+  └ PDR/
+    └result/ [***Almost the same as VDR result folder***]
 ```
 
 ## コマンドライン引数
@@ -157,15 +244,15 @@ demo_estimation/
 PDR, VDR、どちらの評価を行うか選択することができます。  
 引数なしの場合は、PDR, VDR両方とも評価されます。
 ```
-python main.py demo_estimation demo_ground_truth --VDR --PDR
+python main.py estimation_folder groud_truth_folder --VDR --PDR
 ```
 
 ### 2. 評価するファイルを選択
 特定の軌跡ファイルを指定して、評価するファイルを選択することができます。  
 例えば、以下のようなコマンドライン引数で実行した場合、  
-[demo_estimation/VDR/VDR_Traj_No2.txt]の評価が実行されます。
+[estimation_folder/VDR/VDR_Traj_No1.txt]の評価が実行されます。
 ```
-python main.py demo_estimation demo_ground_truth --VDR --file VDR_Traj_No2.txt 
+python main.py estimation_folder groud_truth_folder --VDR --file VDR_Traj_No1.txt 
 ```
 
 ### 3. 計算する指標・必要条件の選択
@@ -173,7 +260,7 @@ python main.py demo_estimation demo_ground_truth --VDR --file VDR_Traj_No2.txt
 引数なしの場合は、全ての指標と必要条件の計算が実行されます  
 
 ```
-python main.py demo_estimation demo_ground_truth --CE --CA --EAG --requirement_velocity --requirement_obstacle  
+python main.py estimation_folder groud_truth_folder --CE --CA --EAG --requirement_velocity --requirement_obstacle  
 ```
 
 ### 4. パラメータの選択
@@ -182,25 +269,25 @@ CE, EAGで計算するパーセント点を指定することができます。
 引数なしの場合は50パーセント点の値が計算されます。  
 以下の場合、CEの30パーセント点、EAGの75パーセント点が計算されます。
 ```
-python main.py demo_estimation demo_ground_truth --CE_percentile 30 --EAG_percentile 75
+python main.py estimation_folder groud_truth_folder --CE_percentile 30 --EAG_percentile 75
 ```
 
 移動速度基準で用いられる速度しきい値を指定することができます。  
 引数なしの場合は、1.5 m/s がしきい値として用いられます。
 ```
-python main.py demo_estimation demo_ground_truth --velocity 1.8
+python main.py estimation_folder groud_truth_folder --velocity 1.8
 ```
 
 CAの計算でのカーネル密度推定のバンド幅を指定することができます。  
 バンド幅の指定がない場合は、sciのデフォルトのバンド幅が用いられます。  
 ```
-python main.py demo_estimation demo_ground_truth --band_width 1.4
+python main.py estimation_folder groud_truth_folder --band_width 1.4
 ```
 
 CAの計算を二次元ヒストグラムで行うように切り替えることが可能となっています。  
 引数なしの場合は、scipyのデフォルトパラメータのカーネル密度推定によってCAが計算されます  
 ```
-python main.py demo_estimation demo_ground_truth --CA_hist
+python main.py estimation_folder groud_truth_folder --CA_hist
 ```
 
 ### 5. 事前に指定したエリア重みを使用する
@@ -224,44 +311,6 @@ area2 = 0.6
 用意したエリア重みの設定ファイルのパスを指定してください。
 ```
 python main.py demo_estimation demo_ground_truth --area_weights demo_area_weights.ini
-```
-
-## デモデータでの実行結果
-デモ用の正解値、推定軌跡データを利用することで、評価ツール実行の様子を確認することができます。  
-計算された指標と必要条件は[demo_estimation/VDR/result/indicator] に保存されます。  
-以下のような推定軌跡に対して評価を行った結果です。  
-VDR_Traj_No2.txt  
-<img src="images/VDR_sample.png" width=280px>  
-
-```                                                 
-(python36) $ python main.py demo_estimation demo_ground_truth --VDR
-track:['VDR'], indicators:['CE', 'CA', 'EAG', 'requirement_velocity', 'requirement_validity']
-VDR_Traj_No1.txt evaluation progress...
-100%|███████████████████████████████████████████████| 9006/9006 [00:03<00:00, 2985.56it/s]
-VDR_Traj_No2.txt evaluation progress...
-100%|███████████████████████████████████████████████| 7868/7868 [00:01<00:00, 4296.64it/s]
-VDR_Traj_No3.txt evaluation progress...
-100%|███████████████████████████████████████████████| 8957/8957 [00:02<00:00, 3021.12it/s]
-VDR_Traj_No4.txt evaluation progress...
-100%|███████████████████████████████████████████████| 7716/7716 [00:01<00:00, 3944.98it/s]
-VDR_Traj_No5.txt evaluation progress...
-100%|███████████████████████████████████████████████| 9054/9054 [00:03<00:00, 2590.31it/s]
-VDR_Traj_No6.txt evaluation progress...
-100%|███████████████████████████████████████████████| 7718/7718 [00:02<00:00, 3803.58it/s]
--------- file indicator --------
-   file_name       CE50     CA     EAG50   requirement_velocity   requirement_obstacle
-======================================================================================
-VDR_Traj_No1.txt   5.271   4.874   0.080          0.571                  0.133        
-VDR_Traj_No2.txt   7.633   4.618   0.158          0.264                  0.098        
-VDR_Traj_No3.txt   4.152   3.704   0.029          0.568                  0.150        
-VDR_Traj_No4.txt   4.071   3.693   1.780          0.365                  0.085        
-VDR_Traj_No5.txt   6.488   6.854   0.087          0.611                  0.221        
-VDR_Traj_No6.txt   3.819   7.129   0.091          0.529                  0.086         
-
--------- total indicator --------
-CE50     CA     EAG50   requirement_velocity   requirement_obstacle
-===================================================================
-5.239   5.145   0.371          0.484                  0.129         
 ```
 
 ## ライセンス
