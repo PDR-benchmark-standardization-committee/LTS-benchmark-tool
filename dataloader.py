@@ -283,6 +283,7 @@ def drop_ans_duplicated_with_ref(ans_point, ref_point):
     return ans_duplicated_ref
 
 def filter_evaluation_data_ALIP(evaluation_point, ALIP_info, ALIP_flag):
+
     '''
     Filter data between ALIP or not
 
@@ -350,12 +351,13 @@ def map_makersize(map_trajectory_size, map_ref_size, map_BLE_size, map_grid):
     map_trajectory_color : str
     map_ref_color : str
     map_BLE_color : str
-
+    map_grid : str
+    
     Returns
     -------
-    map_color : list
+    map_makersize : list
     '''
-    
+
     if map_grid is 'True':
         map_grid = True
     else:
@@ -364,4 +366,3 @@ def map_makersize(map_trajectory_size, map_ref_size, map_BLE_size, map_grid):
     map_makersize = [map_trajectory_size, map_ref_size, map_BLE_size, map_grid]
 
     return map_makersize
-

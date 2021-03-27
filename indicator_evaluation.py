@@ -25,6 +25,7 @@ warnings.filterwarnings('ignore')
 
 class CalcIndicator(object):
     def extract_correspond_point(self, tra_point, eval_point, sec_limit=1.0):
+
         '''
         extract correspond point from tra_point
 
